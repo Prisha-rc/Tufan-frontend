@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AirWatch — Environmental Monitoring Platform</title>
+  <meta name="description" content="AirWatch: Real-time AQI monitoring, road condition classification, and environmental analytics for citizens and government." />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Floating particles */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0.06;
+      animation: rise linear infinite;
+    }
+    @keyframes rise {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 0.08; }
+      90%  { opacity: 0.08; }
+      100% { transform: translateY(-20px) scale(1); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <main class="login-page">
+    <div class="login-hero">
+      <div class="login-logo">🌬️</div>
+      <h1 class="login-title">AirWatch</h1>
+      <p class="login-subtitle">Environmental Intelligence Platform · New Delhi, India</p>
+    </div>
+
+    <div class="login-cards">
+      <!-- ── ADMIN ── -->
+      <div class="login-card" style="--card-gradient: linear-gradient(90deg,#8f3f97,#4e9af1)">
+        <div class="login-card-icon" style="background:rgba(143,63,151,0.18)">🛡️</div>
+        <div class="login-card-title">Administrator</div>
+        <div class="login-card-desc">Manage users, configure data sources, review system-wide alerts</div>
+        <div class="form-group">
+          <label for="admin-email">Email</label>
+          <input id="admin-email" class="form-input" type="email" placeholder="admin@airwatch.in" />
+        </div>
+        <div class="form-group">
+          <label for="admin-pass">Password</label>
+          <input id="admin-pass" class="form-input" type="password" placeholder="••••••••" />
+        </div>
+        <p id="admin-error" class="err-msg"></p>
+        <button class="btn-login" onclick="handleLogin('admin')"
+          style="background:linear-gradient(135deg,#8f3f97,#4e9af1);color:#fff">
+          🛡️ Sign In as Admin
+        </button>
+        <div class="login-hint">📧 admin@airwatch.in · 🔑 admin123</div>
+      </div>
+
+      <!-- ── GOVERNMENT ── -->
+      <div class="login-card" style="--card-gradient: linear-gradient(90deg,#4e9af1,#00c48c)">
+        <div class="login-card-icon" style="background:rgba(78,154,241,0.18)">🏛️</div>
+        <div class="login-card-title">Government</div>
+        <div class="login-card-desc">Hotspot analysis, road alerts, AQI source tracking & mitigation</div>
+        <div class="form-group">
+          <label for="govt-email">Email</label>
+          <input id="govt-email" class="form-input" type="email" placeholder="govt@airwatch.in" />
+        </div>
+        <div class="form-group">
+          <label for="govt-pass">Password</label>
+          <input id="govt-pass" class="form-input" type="password" placeholder="••••••••" />
+        </div>
+        <p id="govt-error" class="err-msg"></p>
+        <button class="btn-login" onclick="handleLogin('govt')"
+          style="background:linear-gradient(135deg,#4e9af1,#00c48c);color:#fff">
+          🏛️ Sign In as Government
+        </button>
+        <div class="login-hint">📧 govt@airwatch.in · 🔑 govt123</div>
+      </div>
+
+      <!-- ── CITIZEN ── -->
+      <div class="login-card" style="--card-gradient: linear-gradient(90deg,#00c48c,#ffca28)">
+        <div class="login-card-icon" style="background:rgba(0,196,140,0.18)">👤</div>
+        <div class="login-card-title">Citizen</div>
+        <div class="login-card-desc">Real-time AQI, health advisories, predictions & pollution maps</div>
+        <div class="form-group">
+          <label for="citizen-email">Email</label>
+          <input id="citizen-email" class="form-input" type="email" placeholder="citizen@airwatch.in" />
+        </div>
+        <div class="form-group">
+          <label for="citizen-pass">Password</label>
+          <input id="citizen-pass" class="form-input" type="password" placeholder="••••••••" />
+        </div>
+        <p id="citizen-error" class="err-msg"></p>
+        <button class="btn-login" onclick="handleLogin('citizen')"
+          style="background:linear-gradient(135deg,#00c48c,#ffca28);color:#060b14">
+          👤 Sign In as Citizen
+        </button>
+        <div class="login-hint">📧 citizen@airwatch.in · 🔑 citizen123</div>
+      </div>
+    </div>
+
+    <p style="margin-top:40px;font-size:0.75rem;color:var(--text-muted);z-index:1">
+      © 2026 AirWatch · Environmental Monitoring Platform · New Delhi
+    </p>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    // Particle generator
+    const container = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 80 + 20;
+      p.style.cssText = `
+        width:${size}px; height:${size}px;
+        left:${Math.random()*100}%;
+        background: ${['#4e9af1','#8f3f97','#00c48c','#ffca28'][Math.floor(Math.random()*4)]};
+        animation-duration: ${Math.random()*20+15}s;
+        animation-delay: ${Math.random()*15}s;
+      `;
+      container.appendChild(p);
+    }
+
+    // Allow Enter key to submit within a card
+    document.querySelectorAll('.form-input').forEach(input => {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          const btn = input.closest('.login-card').querySelector('.btn-login');
+          btn.click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AirWatch — Government Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon">🌬️</div>
+      AirWatch
+      <span class="badge" style="background:rgba(78,154,241,0.15);color:#4e9af1;border:1px solid #4e9af155;font-size:0.7rem;padding:2px 8px;margin-left:6px">GOVERNMENT</span>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-info">
+      <span class="location-tag">📍 New Delhi Command Centre</span>
+      <span id="live-date" style="font-size:0.8rem"></span>
+      <span class="clock" id="live-clock"></span>
+      <button class="btn-logout" onclick="logout()">⏻ Logout</button>
+    </div>
+  </header>
+
+  <nav class="sidebar">
+    <div class="sidebar-section-label">Navigation</div>
+    <a href="government.html" class="nav-link active"><span class="nav-icon">🏛️</span> Dashboard</a>
+    <a href="maps.html"       class="nav-link"><span class="nav-icon">🗺️</span> Maps</a>
+    <a href="cfd.html"        class="nav-link"><span class="nav-icon">🌪️</span> CFD Simulation</a>
+    <div class="sidebar-section-label">Analytics</div>
+    <a href="#hotspot-section"     class="nav-link"><span class="nav-icon">🔥</span> Hotspots</a>
+    <a href="#source-section"      class="nav-link"><span class="nav-icon">📊</span> Source Trends</a>
+    <a href="#construction-section"class="nav-link"><span class="nav-icon">🏗️</span> Construction Alerts</a>
+    <a href="#road-section"        class="nav-link"><span class="nav-icon">🛣️</span> Road Alerts</a>
+    <a href="#mitigation-section"  class="nav-link"><span class="nav-icon">🛡️</span> Mitigations</a>
+    <a href="#predict-section"     class="nav-link"><span class="nav-icon">🌧️</span> Prediction</a>
+  </nav>
+
+  <main class="main-content">
+
+    <!-- Header KPI Row -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Government Command Dashboard</div>
+        <div class="page-subtitle">Real-time AQI sources, road conditions, and site alerts — New Delhi</div>
+      </div>
+    </div>
+
+    <!-- KPI row -->
+    <div class="grid-4">
+      <div class="metric-card" style="--metric-color:#ff4444">
+        <div class="metric-label">Active Alerts</div>
+        <div class="metric-value text-danger" id="kpi-alerts">3</div>
+        <div class="metric-unit">Construction + Road</div>
+      </div>
+      <div class="metric-card" style="--metric-color:#ff7e00">
+        <div class="metric-label">City AQI</div>
+        <div class="metric-value" style="color:#ff7e00">178</div>
+        <div class="metric-unit">Moderate — Rising</div>
+      </div>
+      <div class="metric-card" style="--metric-color:#ffca28">
+        <div class="metric-label">Pothole Roads</div>
+        <div class="metric-value text-warning">4</div>
+        <div class="metric-unit">Urgent repair needed</div>
+      </div>
+      <div class="metric-card" style="--metric-color:#8f3f97">
+        <div class="metric-label">AQI Hotspots</div>
+        <div class="metric-value" style="color:#8f3f97">5</div>
+        <div class="metric-unit">Active zones today</div>
+      </div>
+    </div>
+
+    <!-- Hotspot Map -->
+    <div class="card" id="hotspot-section">
+      <div class="card-header">
+        <div>
+          <div class="card-title">AQI Hotspot Map</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Circle size = AQI intensity · Click for details</div>
+        </div>
+        <div class="flex gap-8">
+          <span class="badge badge-vpoor">● Very Poor &gt;300</span>
+          <span class="badge badge-poor">● Poor &gt;200</span>
+          <span class="badge badge-moderate">● Moderate &gt;100</span>
+        </div>
+      </div>
+      <div class="map-container">
+        <div id="hotspot-map" style="height:380px"></div>
+      </div>
+    </div>
+
+    <!-- Source Breakdown + Weekly Trend -->
+    <div class="grid-2" id="source-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">AQI Source Breakdown</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Today's contribution split</div>
+        </div>
+        <div class="chart-container" style="height:220px">
+          <canvas id="source-chart"></canvas>
+        </div>
+        <div id="source-legend" class="mt-12" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">7-Day Source Trend</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Stacked pollutant contributions</div>
+        </div>
+        <div class="chart-container" style="height:280px">
+          <canvas id="weekly-chart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Pearson Correlation Heatmap (from correlation_analysis.py) ── -->
+    <div class="card" id="correlation-section">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📊 Rainfall–Traffic–AQI Correlation Matrix</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Pearson correlation — source: <code style="background:var(--bg-700);padding:1px 5px;border-radius:3px;font-size:0.75rem">correlation_analysis.py</code></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:0.78rem;color:var(--text-muted)">
+          <span style="color:#4285f4">■</span>Strong +ve &nbsp;
+          <span style="color:#9eb3d8">■</span>Neutral &nbsp;
+          <span style="color:#ea4335">■</span>Strong −ve
+        </div>
+      </div>
+      <div class="grid-2" style="gap:24px;align-items:start">
+        <!-- Heatmap grid -->
+        <div>
+          <canvas id="corr-chart" height="220"></canvas>
+        </div>
+        <!-- Key insights -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">Key Insights</div>
+          <div class="metric-card card-sm" style="--metric-color:#4e9af1;padding:12px">
+            <div class="metric-label">Traffic ↑ → Indoor AQI ↑</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:3px">r = <b style="color:#4e9af1">+0.76</b> — Strong positive correlation. More vehicles = more emissions.</div>
+          </div>
+          <div class="metric-card card-sm" style="--metric-color:#ff7043;padding:12px">
+            <div class="metric-label">Rainfall ↑ → Traffic ↓</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:3px">r = <b style="color:#ff7043">−0.41</b> — Rain reduces traffic volume (school/office travel drops).</div>
+          </div>
+          <div class="metric-card card-sm" style="--metric-color:#ffca28;padding:12px">
+            <div class="metric-label">Hour ↑ → AQI ↑</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:3px">r = <b style="color:#ffca28">+0.58</b> — Evening peak hours drive pollution accumulation.</div>
+          </div>
+          <div class="metric-card card-sm" style="--metric-color:#00c48c;padding:12px">
+            <div class="metric-label">Visibility ↑ → AQI ↓</div>
+            <div style="font-size:0.82rem;color:var(--text-secondary);margin-top:3px">r = <b style="color:#00c48c">−0.45</b> — Lower visibility indicates higher particulate concentration.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Construction Site Alerts ── -->
+
+    <div class="card" id="construction-section">
+      <div class="card-header">
+        <div>
+          <div class="card-title">⚠ Construction Site AQI Alerts</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Real-time monitoring — Threshold: AQI &gt; 200</div>
+        </div>
+        <span id="alert-count" class="badge badge-alert">-- Sites in ALERT</span>
+      </div>
+      <div id="construction-alerts"></div>
+      <div style="margin-top:16px">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Site ID</th><th>Location</th><th>Current AQI</th><th>Threshold</th><th>Contractor</th><th>Status</th><th>Coordinates</th>
+            </tr>
+          </thead>
+          <tbody id="construction-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Road Pothole Alerts -->
+    <div class="card" id="road-section">
+      <div class="card-header">
+        <div class="card-title">🛣️ Road Condition Alerts</div>
+        <div style="font-size:0.78rem;color:var(--text-muted)">Roads requiring urgent maintenance</div>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Road Name</th><th>Condition</th><th>Score</th><th>Reason</th><th>Priority</th></tr>
+        </thead>
+        <tbody id="road-table"></tbody>
+      </table>
+    </div>
+
+    <!-- Mitigation Recommendations + Road Prediction -->
+    <div class="grid-2">
+      <div class="card" id="mitigation-section">
+        <div class="card-header">
+          <div class="card-title">🛡️ Mitigation Recommendations</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Action plan by priority</div>
+        </div>
+        <div id="mitigation-list"></div>
+      </div>
+
+      <div class="card" id="predict-section">
+        <div class="card-header">
+          <div class="card-title">🌧️ Road Condition Prediction</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Based on rainfall + traffic density model</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;margin-top:8px">
+          <div class="grid-2" style="gap:12px">
+            <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:14px;text-align:center">
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Rainfall Input</div>
+              <div style="font-size:2rem;font-weight:800;font-family:var(--mono);color:#4e9af1" id="pred-rain">--</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">mm/day forecast</div>
+            </div>
+            <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius-sm);padding:14px;text-align:center">
+              <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Traffic Load</div>
+              <div style="font-size:2rem;font-weight:800;font-family:var(--mono);color:#ffca28" id="pred-traffic">--</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">% of road capacity</div>
+            </div>
+          </div>
+          <div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:18px;text-align:center">
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px">Predicted Road Condition</div>
+            <div id="pred-condition" style="font-size:1.8rem;font-weight:800"></div>
+            <div id="pred-score" style="font-size:0.82rem;color:var(--text-muted);margin-top:4px"></div>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="pred-conf-bar" class="progress-bar-fill" style="background:#4e9af1;width:0%"></div>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Model confidence: <span id="pred-conf" class="text-accent text-mono">--</span>%</div>
+          <div style="background:rgba(255,202,40,0.06);border:1px solid rgba(255,202,40,0.2);border-radius:var(--radius-sm);padding:12px">
+            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#ffca28;margin-bottom:8px">Breakdown</div>
+            <div id="pred-breakdown" style="font-size:0.82rem;color:var(--text-secondary);line-height:1.7"></div>
+          </div>
+          <div id="pred-rec" style="background:rgba(78,154,241,0.06);border:1px solid rgba(78,154,241,0.2);border-radius:var(--radius-sm);padding:12px;font-size:0.82rem;color:var(--text-secondary)"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+// ── Construction Alerts ──
+function renderConstructionAlerts() {
+  const alertSites = CONSTRUCTION_SITES.filter(s => s.status === 'ALERT');
+  document.getElementById('alert-count').textContent = `${alertSites.length} Sites in ALERT`;
+
+  const alertsDiv = document.getElementById('construction-alerts');
+  alertsDiv.innerHTML = alertSites.map(s => `
+    <div class="alert-item">
+      <div class="alert-dot critical"></div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:0.9rem">${s.name}</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">
+          AQI <strong style="color:#ff4444">${s.currentAQI}</strong> — exceeds threshold of ${s.threshold} 
+          &nbsp;·&nbsp; Contractor: ${s.contractor}
+          &nbsp;·&nbsp; 📍 ${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}
+        </div>
+      </div>
+      <span class="badge badge-alert">ALERT</span>
+    </div>
+  `).join('');
+
+  const tbody = document.getElementById('construction-table');
+  tbody.innerHTML = CONSTRUCTION_SITES.map(s => {
+    const info = getAQIInfo(s.currentAQI);
+    return `<tr>
+      <td class="text-mono" style="color:var(--accent)">${s.id}</td>
+      <td>${s.name}</td>
+      <td style="color:${info.color};font-weight:700;font-family:var(--mono)">${s.currentAQI}</td>
+      <td class="text-mono">${s.threshold}</td>
+      <td>${s.contractor}</td>
+      <td><span class="badge ${s.status==='ALERT'?'badge-alert':'badge-ok'}">${s.status}</span></td>
+      <td class="text-mono font-xs" style="color:var(--text-muted)">${s.lat.toFixed(4)}, ${s.lng.toFixed(4)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Road Table ──
+function renderRoadTable() {
+  const tbody = document.getElementById('road-table');
+  const badRoads = ROAD_CONDITIONS.filter(r => r.condition !== 'Good')
+    .sort((a,b) => a.score - b.score);
+
+  tbody.innerHTML = badRoads.map(r => {
+    const style = roadConditionStyle(r.condition);
+    const priority = r.score < 30 ? 'Urgent' : r.score < 60 ? 'Medium' : 'Low';
+    const priColor = r.score < 30 ? 'var(--danger)' : r.score < 60 ? 'var(--warning)' : 'var(--success)';
+    return `<tr>
+      <td style="font-weight:600">${r.road}</td>
+      <td><span style="color:${style.color};font-weight:700">${style.icon} ${r.condition}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="progress-bar-wrap" style="width:60px">
+            <div class="progress-bar-fill" style="width:${r.score}%;background:${style.color}"></div>
+          </div>
+          <span class="text-mono font-xs">${r.score}</span>
+        </div>
+      </td>
+      <td style="color:var(--text-muted);font-size:0.82rem">${r.reason}</td>
+      <td><span style="color:${priColor};font-weight:700;font-size:0.8rem">${priority}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Source Chart ──
+function renderSourceChart() {
+  new Chart(document.getElementById('source-chart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: SOURCE_LABELS,
+      datasets: [{
+        data: SOURCE_DATA,
+        backgroundColor: SOURCE_COLORS.map(c => c + 'cc'),
+        borderColor: SOURCE_COLORS,
+        borderWidth: 2,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor:'rgba(13,21,38,0.95)', titleColor:'#e8f0fe', bodyColor:'#9eb3d8',
+          borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+          callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}%` }
+        }
+      }
+    }
+  });
+
+  const legend = document.getElementById('source-legend');
+  legend.innerHTML = SOURCE_LABELS.map((l,i) => `
+    <div class="flex-between">
+      <div class="flex gap-8" style="align-items:center">
+        <div style="width:10px;height:10px;border-radius:50%;background:${SOURCE_COLORS[i]}"></div>
+        <span style="font-size:0.82rem;color:var(--text-secondary)">${l}</span>
+      </div>
+      <span style="font-size:0.82rem;font-weight:700;font-family:var(--mono);color:${SOURCE_COLORS[i]}">${SOURCE_DATA[i]}%</span>
+    </div>
+  `).join('');
+}
+
+// ── Weekly Stacked Chart ──
+function renderWeeklyChart() {
+  new Chart(document.getElementById('weekly-chart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: WEEK_LABELS,
+      datasets: [
+        { label:'Traffic',      data:WEEK_TRAFFIC,      backgroundColor:'#4e9af1aa', borderColor:'#4e9af1', borderWidth:1 },
+        { label:'Stubble',      data:WEEK_STUBBLE,      backgroundColor:'#ff7043aa', borderColor:'#ff7043', borderWidth:1 },
+        { label:'Construction', data:WEEK_CONSTRUCTION, backgroundColor:'#ffca28aa', borderColor:'#ffca28', borderWidth:1 },
+        { label:'Industrial',   data:WEEK_INDUSTRIAL,   backgroundColor:'#ab47bcaa', borderColor:'#ab47bc', borderWidth:1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color:'#9eb3d8', font:{family:'Inter',size:11}, padding:16 } },
+        tooltip: { backgroundColor:'rgba(13,21,38,0.95)', titleColor:'#e8f0fe', bodyColor:'#9eb3d8', borderColor:'rgba(255,255,255,0.1)', borderWidth:1 }
+      },
+      scales: {
+        x: { stacked:true, ticks:{color:'#5a7599'}, grid:{color:'rgba(255,255,255,0.04)'} },
+        y: { stacked:true, ticks:{color:'#5a7599'}, grid:{color:'rgba(255,255,255,0.04)'} }
+      }
+    }
+  });
+}
+
+// ── Mitigation List ──
+function renderMitigations() {
+  const el = document.getElementById('mitigation-list');
+  el.innerHTML = GOVT_MITIGATIONS.map(m => {
+    const color = priorityColor(m.priority);
+    return `<div class="mitigation-item">
+      <div class="priority-dot" style="background:${color}"></div>
+      <div style="flex:1">${m.action}</div>
+      <span style="font-size:0.7rem;font-weight:700;color:${color};white-space:nowrap">${m.priority}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Road Prediction ──
+function renderRoadPrediction() {
+  const p = ROAD_PREDICTION_DATA;
+  document.getElementById('pred-rain').textContent    = p.rainfallInput;
+  document.getElementById('pred-traffic').textContent = p.trafficInput + '%';
+
+  const style = roadConditionStyle(p.predictedCondition);
+  document.getElementById('pred-condition').textContent = `${style.icon} ${p.predictedCondition}`;
+  document.getElementById('pred-condition').style.color = style.color;
+  document.getElementById('pred-score').textContent = `Condition score: ${p.predictedScore}/100`;
+  document.getElementById('pred-conf-bar').style.width = p.confidencePercent + '%';
+  document.getElementById('pred-conf').textContent = p.confidencePercent;
+
+  document.getElementById('pred-breakdown').innerHTML =
+    `🌧 ${p.breakdown.rainfallImpact}<br>🚗 ${p.breakdown.trafficImpact}`;
+  document.getElementById('pred-rec').innerHTML = `🔧 ${p.breakdown.recommendation}`;
+}
+
+// ── Hotspot Map ──
+function initHotspotMap() {
+  const map = L.map('hotspot-map', { zoomControl: true }).setView([28.6139, 77.2090], 11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'© OpenStreetMap contributors © CARTO', maxZoom:19
+  }).addTo(map);
+
+  HOTSPOT_ZONES.forEach(z => {
+    const info  = getAQIInfo(z.aqi);
+    const circle = L.circle([z.lat, z.lng], {
+      radius: z.radius,
+      color: info.color,
+      fillColor: info.color,
+      fillOpacity: 0.25,
+      weight: 2,
+    }).addTo(map);
+
+    circle.bindPopup(`
+      <div style="min-width:180px">
+        <strong style="font-size:1rem">${z.name}</strong><br>
+        <span style="color:${info.color};font-weight:700;font-size:1.1rem">AQI ${z.aqi}</span>
+        <span style="color:#9eb3d8;font-size:0.8rem"> — ${info.label}</span><br>
+        <div style="margin-top:6px;font-size:0.8rem;color:#9eb3d8">Source: ${z.source}</div>
+      </div>
+    `);
+  });
+
+  // Construction site alerts on map
+  CONSTRUCTION_SITES.filter(s => s.status === 'ALERT').forEach(s => {
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="background:#ff4444;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #fff;box-shadow:0 0 12px #ff4444">🏗</div>`,
+      iconSize:[28,28], iconAnchor:[14,14]
+    });
+    L.marker([s.lat, s.lng], { icon }).addTo(map)
+      .bindPopup(`<strong>${s.name}</strong><br>AQI: <strong style="color:#ff4444">${s.currentAQI}</strong> — ALERT<br><small>${s.contractor}</small>`);
+  });
+}
+
+// ── Pearson Correlation Heatmap ──
+// Renders CORRELATION_MATRIX from correlation_analysis.py output
+function renderCorrelationChart() {
+  const ctx = document.getElementById('corr-chart').getContext('2d');
+  const labels = CORRELATION_MATRIX.labels;
+  const data   = CORRELATION_MATRIX.data;
+  const n = labels.length;
+
+  // Build dataset: one dataset per variable (stacked horizontal matrix)
+  // We render as a bar chart with custom colors per cell
+  const datasets = [];
+  for (let row = 0; row < n; row++) {
+    datasets.push({
+      label: labels[row],
+      data: data[row],
+      backgroundColor: data[row].map(v => {
+        // coolwarm: red=+1, white=0, blue=-1
+        if (v > 0) {
+          const i = Math.round(v * 200);
+          return `rgba(${66+i},${132-i},${244-i},0.85)`;
+        } else {
+          const i = Math.round(-v * 200);
+          return `rgba(${234-i},${67+i},${67+i},0.85)`;
+        }
+      }),
+      borderColor: 'rgba(255,255,255,0.08)',
+      borderWidth: 1,
+    });
+  }
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(13,21,38,0.95)',
+          titleColor: '#e8f0fe',
+          bodyColor: '#9eb3d8',
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label} vs ${ctx.label}: r = ${ctx.raw.toFixed(2)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: false,
+          ticks: { color: '#5a7599', font: { size: 10 } },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        },
+        y: {
+          min: -1, max: 1,
+          ticks: {
+            color: '#5a7599', font: { size: 10 },
+            callback: v => v.toFixed(1)
+          },
+          grid: { color: 'rgba(255,255,255,0.06)' }
+        }
+      }
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderConstructionAlerts();
+  renderRoadTable();
+  renderSourceChart();
+  renderWeeklyChart();
+  renderMitigations();
+  renderRoadPrediction();
+  renderCorrelationChart();
+  initHotspotMap();
+});
+</script>
+</body>
+</html>
+

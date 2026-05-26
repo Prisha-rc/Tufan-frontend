@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AirWatch — Citizen Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-icon">🌬️</div>
+      AirWatch
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-info">
+      <span class="location-tag">📍 <span id="cur-location"></span></span>
+      <span id="live-date" style="font-size:0.8rem"></span>
+      <span class="clock" id="live-clock"></span>
+      <button class="btn-logout" onclick="logout()">⏻ Logout</button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-section-label">Navigation</div>
+    <a href="citizen.html" class="nav-link active"><span class="nav-icon">🏠</span> Dashboard</a>
+    <a href="maps.html"    class="nav-link"><span class="nav-icon">🗺️</span> Maps</a>
+    <a href="cfd.html"     class="nav-link"><span class="nav-icon">🌪️</span> CFD Simulation</a>
+
+    <div class="sidebar-section-label">Monitoring</div>
+    <a href="#aqi-section"       class="nav-link"><span class="nav-icon">💨</span> AQI Status</a>
+    <a href="#pollutant-section" class="nav-link"><span class="nav-icon">📈</span> Pollutant Trends</a>
+    <a href="#prediction-section"class="nav-link"><span class="nav-icon">🔮</span> Predictions</a>
+    <a href="#advisory-section"  class="nav-link"><span class="nav-icon">🩺</span> Health Advisory</a>
+    <a href="#light-section"     class="nav-link"><span class="nav-icon">💡</span> Light Pollution</a>
+  </nav>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header" id="aqi-section">
+      <div>
+        <div class="page-title">Citizen Dashboard</div>
+        <div class="page-subtitle">Real-time Air Quality & Environmental Data</div>
+      </div>
+      <div id="aqi-badge-large" class="badge" style="font-size:0.9rem;padding:8px 18px;"></div>
+    </div>
+
+    <!-- ── AQI + Metrics row ── -->
+    <div class="grid-4">
+      <!-- AQI Gauge -->
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:8px;grid-column:span 1">
+        <div class="card-title">AQI Index</div>
+        <div class="aqi-gauge-wrap">
+          <svg id="aqi-gauge-svg" width="200" height="130" viewBox="0 0 200 130">
+            <!-- track arc -->
+            <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="#1e3058" stroke-width="14" stroke-linecap="round"/>
+            <!-- coloured fill arc (set by JS) -->
+            <path id="gauge-fill" d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="#4e9af1" stroke-width="14" stroke-linecap="round"
+              stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+            <!-- AQI segments labels -->
+            <text x="14"  y="126" fill="#00e400" font-size="8" font-family="Inter">0</text>
+            <text x="90"  y="26"  fill="#ffca28" font-size="8" font-family="Inter" text-anchor="middle">200</text>
+            <text x="183" y="126" fill="#8f3f97" font-size="8" font-family="Inter">500</text>
+            <!-- value -->
+            <text id="gauge-text"  x="100" y="100" fill="#e8f0fe" font-size="32" font-weight="800" font-family="Inter" text-anchor="middle">--</text>
+            <text id="gauge-label" x="100" y="124" fill="#9eb3d8" font-size="11" font-family="Inter" text-anchor="middle">Loading…</text>
+          </svg>
+        </div>
+      </div>
+
+      <!-- PM2.5 -->
+      <div class="metric-card" style="--metric-color:#4e9af1">
+        <div class="metric-label">PM 2.5</div>
+        <div class="metric-value text-accent" id="pm25-val">--</div>
+        <div class="metric-unit">µg/m³</div>
+        <div class="flex-between mt-8">
+          <span class="metric-trend font-xs">24h avg</span>
+          <span id="pm25-avg" class="text-mono font-xs text-muted">--</span>
+        </div>
+        <div class="sparkline-wrap mt-8" id="pm25-spark"></div>
+      </div>
+
+      <!-- PM10 -->
+      <div class="metric-card" style="--metric-color:#ff7e00">
+        <div class="metric-label">PM 10</div>
+        <div class="metric-value" style="color:#ff7e00" id="pm10-val">--</div>
+        <div class="metric-unit">µg/m³</div>
+        <div class="flex-between mt-8">
+          <span class="metric-trend font-xs">24h avg</span>
+          <span id="pm10-avg" class="text-mono font-xs text-muted">--</span>
+        </div>
+        <div class="sparkline-wrap mt-8" id="pm10-spark"></div>
+      </div>
+
+      <!-- Temperature & Humidity -->
+      <div class="metric-card" style="--metric-color:#00c48c">
+        <div class="metric-label">Temperature</div>
+        <div class="metric-value text-success" id="temp-val">--</div>
+        <div class="metric-unit">°C</div>
+        <div style="margin-top:16px">
+          <div class="flex-between font-xs" style="color:var(--text-muted);margin-bottom:4px">
+            <span>Humidity</span><span id="hum-val" class="text-mono">--</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="hum-bar" style="background:#00c48c;width:0%"></div>
+          </div>
+          <div class="flex-between font-xs mt-8" style="color:var(--text-muted)">
+            <span>Wind</span><span id="wind-val" class="text-mono">-- km/h</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Pollutant Trend Chart ── -->
+    <div class="card" id="pollutant-section">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Pollutant Trend</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">24-hour PM2.5 · PM10 · AQI readings</div>
+        </div>
+        <div class="tab-bar" style="width:auto;gap:4px">
+          <button class="tab-btn active" onclick="switchTrend('all',this)">All</button>
+          <button class="tab-btn" onclick="switchTrend('pm25',this)">PM2.5</button>
+          <button class="tab-btn" onclick="switchTrend('pm10',this)">PM10</button>
+          <button class="tab-btn" onclick="switchTrend('aqi',this)">AQI</button>
+        </div>
+      </div>
+      <div class="chart-container" style="height:260px">
+        <canvas id="trend-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- ── Predictions ── -->
+    <div class="grid-2" id="prediction-section">
+      <!-- AQI Prediction -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">AQI Prediction</div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">Next 6 hours forecast</div>
+          </div>
+          <span id="pred-badge" class="badge">--</span>
+        </div>
+        <div class="chart-container" style="height:200px">
+          <canvas id="pred-aqi-chart"></canvas>
+        </div>
+        <div id="pred-advice" style="margin-top:14px;padding:12px;background:var(--glass);border-radius:var(--radius-sm);font-size:0.82rem;color:var(--text-secondary)"></div>
+      </div>
+
+      <!-- Temperature Prediction -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Temperature Prediction</div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">Next 6 hours forecast</div>
+          </div>
+          <span style="font-size:0.82rem;color:var(--text-muted)">°C</span>
+        </div>
+        <div class="chart-container" style="height:200px">
+          <canvas id="pred-temp-chart"></canvas>
+        </div>
+        <div class="flex-between mt-12 font-xs" style="color:var(--text-muted)">
+          <span>Min: <span id="temp-min" class="text-success text-mono">--</span>°C</span>
+          <span>Max: <span id="temp-max" class="text-danger text-mono">--</span>°C</span>
+          <span>Avg: <span id="temp-avg-pred" class="text-accent text-mono">--</span>°C</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Advisory + Light Pollution ── -->
+    <div class="grid-2" id="advisory-section">
+      <!-- Health Advisory -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Health Advisory</div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">Based on current AQI</div>
+          </div>
+          <span id="adv-icon" style="font-size:2rem"></span>
+        </div>
+        <div class="advisory-card" id="advisory-main">
+          <div id="adv-general" style="font-size:0.92rem;font-weight:600"></div>
+          <div id="adv-sensitive" class="mt-8" style="font-size:0.83rem;color:var(--text-secondary)"></div>
+          <div class="advisory-actions" id="adv-actions"></div>
+        </div>
+      </div>
+
+      <!-- Light Pollution -->
+      <div class="card" id="light-section">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Light Pollution</div>
+            <div style="font-size:0.78rem;color:var(--text-muted)">Night-sky luminosity index</div>
+          </div>
+          <span class="card-icon">🌙</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="text-align:center;padding:20px 0">
+            <div id="lp-value" class="prediction-value" style="font-size:3rem">--</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px">Sky Brightness (Lux)</div>
+            <div id="lp-label" class="badge mt-12" style="display:inline-flex;font-size:0.85rem;padding:5px 16px;margin:12px auto 0"></div>
+          </div>
+          <div id="lp-bar-wrap" class="progress-bar-wrap">
+            <div id="lp-bar" class="progress-bar-fill"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text-muted)">
+            <span>Severe Pollution (0)</span>
+            <span>Dark Sky (100+)</span>
+          </div>
+          <div id="lp-tip" class="advisory-card" style="margin-top:0;font-size:0.83rem"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+<script>
+// Populate location
+document.getElementById('cur-location').textContent = CURRENT.location;
+
+// ── AQI Gauge ──
+function renderGauge(value) {
+  const info  = getAQIInfo(value);
+  const pct   = Math.min(value / 500, 1);
+  const total = 251.3; // half-circle arc length at r=80
+  const offset= total - (pct * total);
+
+  document.getElementById('gauge-fill').style.stroke       = info.color;
+  document.getElementById('gauge-fill').style.strokeDashoffset = offset;
+  document.getElementById('gauge-text').textContent        = value;
+  document.getElementById('gauge-text').style.fill         = info.color;
+  document.getElementById('gauge-label').textContent       = info.label;
+
+  // Top badge
+  const badge = document.getElementById('aqi-badge-large');
+  badge.textContent = `AQI ${value} — ${info.label}`;
+  badge.style.cssText = `font-size:.9rem;padding:8px 18px;background:${info.bg};color:${info.color};border:1px solid ${info.color}55;border-radius:20px`;
+}
+
+// ── Metric Cards ──
+function populateMetrics() {
+  document.getElementById('pm25-val').textContent  = CURRENT.pm25.toFixed(1);
+  document.getElementById('pm10-val').textContent  = CURRENT.pm10.toFixed(1);
+  document.getElementById('temp-val').textContent  = CURRENT.temperature.toFixed(1);
+  document.getElementById('hum-val').textContent   = CURRENT.humidity + '%';
+  document.getElementById('hum-bar').style.width   = CURRENT.humidity + '%';
+  document.getElementById('wind-val').textContent  = CURRENT.windSpeed + ' km/h';
+
+  const avg25 = (HOURLY_PM25.reduce((a,b)=>a+b,0)/HOURLY_PM25.length).toFixed(1);
+  const avg10 = (HOURLY_PM10.reduce((a,b)=>a+b,0)/HOURLY_PM10.length).toFixed(1);
+  document.getElementById('pm25-avg').textContent = avg25;
+  document.getElementById('pm10-avg').textContent = avg10;
+
+  // Sparklines
+  buildSparkline('pm25-spark', HOURLY_PM25.slice(-12), '#4e9af1');
+  buildSparkline('pm10-spark', HOURLY_PM10.slice(-12), '#ff7e00');
+}
+
+function buildSparkline(id, data, color) {
+  const el = document.getElementById(id);
+  const max = Math.max(...data);
+  el.innerHTML = data.map(v =>
+    `<div class="sparkline-bar" style="height:${(v/max*100)}%;background:${color}"></div>`
+  ).join('');
+}
+
+// ── Trend Chart ──
+const trendCtx = document.getElementById('trend-chart').getContext('2d');
+const trendChart = new Chart(trendCtx, {
+  type: 'line',
+  data: {
+    labels: HOURLY_LABELS,
+    datasets: [
+      {
+        label: 'AQI', data: HOURLY_AQI,
+        borderColor: '#8f3f97', backgroundColor: 'rgba(143,63,151,0.08)',
+        tension: 0.4, fill: true, pointRadius: 3, borderWidth: 2,
+      },
+      {
+        label: 'PM2.5', data: HOURLY_PM25,
+        borderColor: '#4e9af1', backgroundColor: 'rgba(78,154,241,0.06)',
+        tension: 0.4, fill: true, pointRadius: 3, borderWidth: 2,
+      },
+      {
+        label: 'PM10', data: HOURLY_PM10,
+        borderColor: '#ff7e00', backgroundColor: 'rgba(255,126,0,0.06)',
+        tension: 0.4, fill: true, pointRadius: 3, borderWidth: 2,
+      },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color:'#9eb3d8', font:{family:'Inter',size:12}, padding:20 } },
+      tooltip: {
+        backgroundColor:'rgba(13,21,38,0.95)',
+        titleColor:'#e8f0fe', bodyColor:'#9eb3d8',
+        borderColor:'rgba(255,255,255,0.1)', borderWidth:1,
+        padding:10,
+      }
+    },
+    scales: {
+      x: { ticks:{color:'#5a7599',font:{size:11}}, grid:{color:'rgba(255,255,255,0.04)'} },
+      y: { ticks:{color:'#5a7599',font:{size:11}}, grid:{color:'rgba(255,255,255,0.04)'} },
+    }
+  }
+});
+
+function switchTrend(mode, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  trendChart.data.datasets.forEach((ds, i) => {
+    const show = mode === 'all' || (mode==='aqi'&&i===0) || (mode==='pm25'&&i===1) || (mode==='pm10'&&i===2);
+    ds.hidden = !show;
+  });
+  trendChart.update();
+}
+
+// ── AQI Prediction Chart ──
+function buildPredCharts() {
+  const maxPred = Math.max(...PRED_AQI);
+  const predColors = PRED_AQI.map(v => {
+    const info = getAQIInfo(v);
+    return info.color;
+  });
+
+  new Chart(document.getElementById('pred-aqi-chart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: PRED_LABELS,
+      datasets: [{
+        label: 'Predicted AQI',
+        data: PRED_AQI,
+        backgroundColor: predColors.map(c => c + '99'),
+        borderColor: predColors,
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor:'rgba(13,21,38,0.95)', titleColor:'#e8f0fe', bodyColor:'#9eb3d8', borderColor:'rgba(255,255,255,0.1)', borderWidth:1 }
+      },
+      scales: {
+        x: { ticks:{color:'#5a7599'}, grid:{color:'rgba(255,255,255,0.04)'} },
+        y: { ticks:{color:'#5a7599'}, grid:{color:'rgba(255,255,255,0.04)'}, min: 100 }
+      }
+    }
+  });
+
+  // Badge for max prediction
+  const peakInfo = getAQIInfo(maxPred);
+  const badge = document.getElementById('pred-badge');
+  badge.textContent = `Peak: ${maxPred} (${peakInfo.label})`;
+  badge.style.cssText = `background:${peakInfo.bg};color:${peakInfo.color};border:1px solid ${peakInfo.color}55;font-size:0.8rem;padding:3px 10px;border-radius:20px`;
+  
+  const peakAdv = ADVISORIES[peakInfo.label] || ADVISORIES['Moderate'];
+  document.getElementById('pred-advice').textContent = '⚠ ' + peakAdv.general;
+
+  // Temperature
+  const minT = Math.min(...PRED_TEMP), maxT = Math.max(...PRED_TEMP);
+  const avgT = (PRED_TEMP.reduce((a,b)=>a+b)/PRED_TEMP.length).toFixed(1);
+  document.getElementById('temp-min').textContent = minT.toFixed(1);
+  document.getElementById('temp-max').textContent = maxT.toFixed(1);
+  document.getElementById('temp-avg-pred').textContent = avgT;
+
+  new Chart(document.getElementById('pred-temp-chart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: PRED_LABELS,
+      datasets: [{
+        label: 'Temperature °C',
+        data: PRED_TEMP,
+        borderColor: '#00c48c',
+        backgroundColor: 'rgba(0,196,140,0.08)',
+        tension: 0.4, fill: true, pointRadius: 5,
+        pointBackgroundColor: '#00c48c',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor:'rgba(13,21,38,0.95)', titleColor:'#e8f0fe', bodyColor:'#9eb3d8', borderColor:'rgba(255,255,255,0.1)', borderWidth:1 }
+      },
+      scales: {
+        x: { ticks:{color:'#5a7599'}, grid:{color:'rgba(255,255,255,0.04)'} },
+        y: { ticks:{color:'#5a7599',callback:v=>v+'°C'}, grid:{color:'rgba(255,255,255,0.04)'} }
+      }
+    }
+  });
+}
+
+// ── Health Advisory ──
+function renderAdvisory(aqi) {
+  const info = getAQIInfo(aqi);
+  const adv  = ADVISORIES[info.label];
+  if (!adv) return;
+
+  document.getElementById('adv-icon').textContent = adv.icon;
+  document.getElementById('adv-general').textContent   = adv.general;
+  document.getElementById('adv-sensitive').textContent = adv.sensitive;
+  document.getElementById('advisory-main').style.cssText =
+    `border-color:${info.color}55;background:${info.bg};border-radius:var(--radius-sm);padding:16px`;
+
+  const actEl = document.getElementById('adv-actions');
+  actEl.innerHTML = adv.actions.map(a =>
+    `<div class="advisory-action-item">${a}</div>`
+  ).join('');
+}
+
+// ── Light Pollution ──
+function renderLightPollution(lux) {
+  const lpInfo = getLightPollutionInfo(lux);
+  document.getElementById('lp-value').textContent = lux;
+  document.getElementById('lp-value').style.color = lpInfo.color;
+
+  const labelEl = document.getElementById('lp-label');
+  labelEl.textContent = lpInfo.label + ' Light Pollution';
+  labelEl.style.cssText = `background:${lpInfo.color}22;color:${lpInfo.color};border:1px solid ${lpInfo.color}55;border-radius:20px;padding:5px 16px;display:inline-flex;font-size:0.85rem;font-weight:600`;
+
+  document.getElementById('lp-bar').style.width  = Math.min(lux, 120) / 1.2 + '%';
+  document.getElementById('lp-bar').style.background = lpInfo.color;
+
+  const tipEl = document.getElementById('lp-tip');
+  tipEl.textContent = lpInfo.tip;
+  tipEl.style.cssText = `border-color:${lpInfo.color}55;background:${lpInfo.color}11;border-radius:var(--radius-sm);padding:12px 14px;font-size:0.83rem;color:var(--text-secondary);border:1px solid`;
+}
+
+// ── Init all ──
+document.addEventListener('DOMContentLoaded', () => {
+  renderGauge(CURRENT.aqi);
+  populateMetrics();
+  buildPredCharts();
+  renderAdvisory(CURRENT.aqi);
+  renderLightPollution(CURRENT.lightPollution);
+});
+</script>
+</body>
+</html>
