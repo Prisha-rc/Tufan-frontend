@@ -9,6 +9,7 @@
     /* ── CFD Canvas ── */
     #cfd-canvas {
       display: block;
+      width: 100%; /* Ensures the Flask video stream scales nicely */
       border-radius: var(--radius-lg);
       border: 1px solid var(--glass-border);
       background: #060b14;
@@ -36,16 +37,7 @@
     }
     .cfd-aqi-num  { font-size: 2.4rem; font-weight: 800; font-family: var(--mono); line-height:1; }
     .cfd-aqi-lbl  { font-size: 0.78rem; font-weight: 600; margin-top: 2px; }
-    .cfd-car-count {
-      position: absolute; top: 14px; right: 14px;
-      background: rgba(6,11,20,0.88);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
-      padding: 8px 14px;
-      font-size: 0.82rem; color: var(--text-secondary);
-      pointer-events: none;
-    }
+    
     /* control panel right */
     .cfd-controls {
       width: 240px;
@@ -151,7 +143,6 @@
 
   <main class="main-content">
 
-    <!-- Header -->
     <div class="page-header">
       <div>
         <div class="page-title">CFD Traffic Pollution Simulation</div>
@@ -165,33 +156,26 @@
       </div>
     </div>
 
-    <!-- ── Browser CFD Preview ── -->
     <div class="card" id="browser-sim">
       <div class="card-header">
         <div>
-          <div class="card-title">🖥️ Browser CFD Preview</div>
+          <div class="card-title">🖥️ Live Python CFD Stream</div>
           <div style="font-size:0.78rem;color:var(--text-muted)">
-            Simplified Navier-Stokes fluid simulation running in your browser · Click canvas to add a pollution source
+            Streaming high-fidelity fluid dynamics directly from the Flask backend (Port 5000)
           </div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button id="btn-play"  onclick="toggleSim()" style="background:var(--accent);border:none;color:#fff;border-radius:var(--radius-sm);padding:7px 16px;font-family:var(--font);font-size:0.82rem;cursor:pointer;font-weight:600">⏸ Pause</button>
-          <button onclick="resetSim()" style="background:var(--glass);border:1px solid var(--glass-border);color:var(--text-secondary);border-radius:var(--radius-sm);padding:7px 14px;font-family:var(--font);font-size:0.82rem;cursor:pointer">↺ Reset</button>
         </div>
       </div>
 
       <div class="cfd-wrap">
-        <!-- Canvas -->
         <div class="cfd-canvas-area">
-          <canvas id="cfd-canvas" width="560" height="420"></canvas>
-          <!-- AQI Overlay -->
+          <img id="cfd-canvas" src="http://127.0.0.1:5000/video_feed" alt="Simulation Loading (Make sure app.py is running on port 5000)..." />
+          
           <div class="cfd-aqi-overlay">
             <div class="cfd-aqi-num" id="cfd-aqi-num" style="color:#ffff00">--</div>
-            <div class="cfd-aqi-lbl" id="cfd-aqi-lbl" style="color:#ffff00">CALCULATING...</div>
+            <div class="cfd-aqi-lbl" id="cfd-aqi-lbl" style="color:#ffff00">CONNECTING...</div>
             <div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px">Live CFD AQI</div>
           </div>
-          <div class="cfd-car-count">🚗 <span id="car-count">0</span> vehicles active</div>
-          <!-- Legend -->
+          
           <div style="position:absolute;bottom:12px;left:14px;background:rgba(6,11,20,0.8);border:1px solid var(--glass-border);border-radius:8px;padding:8px 12px;">
             <div class="cfd-legend">
               <div class="legend-grad"></div>
@@ -202,7 +186,6 @@
           </div>
         </div>
 
-        <!-- Controls Panel -->
         <div class="cfd-controls" id="parameters">
           <div class="ctrl-section">
             <div class="ctrl-label">🌬️ Wind Controls</div>
@@ -211,108 +194,53 @@
               <span class="ctrl-val" id="v-wind-spd">25</span>
             </div>
             <input type="range" id="r-wind-spd" min="0" max="80" value="25"
-              oninput="document.getElementById('v-wind-spd').textContent=this.value" />
+              oninput="updateUI(this, 'v-wind-spd')" onchange="sendParams()" />
             <div class="ctrl-row">
               <span class="ctrl-name">Direction°</span>
               <span class="ctrl-val" id="v-wind-dir">45</span>
             </div>
             <input type="range" id="r-wind-dir" min="0" max="360" value="45"
-              oninput="document.getElementById('v-wind-dir').textContent=this.value" />
+              oninput="updateUI(this, 'v-wind-dir')" onchange="sendParams()" />
           </div>
 
           <div class="ctrl-section">
-            <div class="ctrl-label">🚗 Traffic Controls</div>
+            <div class="ctrl-label">🚗 Traffic & City</div>
             <div class="ctrl-row">
               <span class="ctrl-name">Density</span>
               <span class="ctrl-val" id="v-traffic">8</span>
             </div>
             <input type="range" id="r-traffic" min="1" max="30" value="8"
-              oninput="document.getElementById('v-traffic').textContent=this.value" />
-            <div class="ctrl-row">
-              <span class="ctrl-name">Emission Rate</span>
-              <span class="ctrl-val" id="v-emit">60</span>
-            </div>
-            <input type="range" id="r-emit" min="10" max="200" value="60"
-              oninput="document.getElementById('v-emit').textContent=this.value" />
-          </div>
-
-          <div class="ctrl-section">
-            <div class="ctrl-label">💨 Fluid Physics</div>
+              oninput="updateUI(this, 'v-traffic')" onchange="sendParams()" />
             <div class="ctrl-row">
               <span class="ctrl-name">BG AQI</span>
               <span class="ctrl-val" id="v-bg-aqi">40</span>
             </div>
             <input type="range" id="r-bg-aqi" min="0" max="150" value="40"
-              oninput="document.getElementById('v-bg-aqi').textContent=this.value" />
-            <div class="ctrl-row">
-              <span class="ctrl-name">Diffusion</span>
-              <span class="ctrl-val" id="v-diff">3</span>
-            </div>
-            <input type="range" id="r-diff" min="1" max="10" value="3"
-              oninput="document.getElementById('v-diff').textContent=this.value" />
-            <div class="ctrl-row">
-              <span class="ctrl-name">Dissipation</span>
-              <span class="ctrl-val" id="v-diss">97</span>%
-            </div>
-            <input type="range" id="r-diss" min="85" max="99" value="97"
-              oninput="document.getElementById('v-diss').textContent=this.value" />
+              oninput="updateUI(this, 'v-bg-aqi')" onchange="sendParams()" />
           </div>
 
-          <!-- Stats -->
           <div class="ctrl-section">
             <div class="ctrl-label">📊 Simulation Stats</div>
-            <div class="ctrl-row"><span class="ctrl-name">Frame</span><span class="ctrl-val" id="stat-frame">0</span></div>
-            <div class="ctrl-row"><span class="ctrl-name">Grid</span><span class="ctrl-val" style="font-size:0.72rem">80×60</span></div>
-            <div class="ctrl-row"><span class="ctrl-name">Solver</span><span class="ctrl-val" style="color:#00c48c;font-size:0.72rem">JS/Canvas</span></div>
-            <div class="ctrl-row"><span class="ctrl-name">Source</span><span class="ctrl-val" id="stat-source" style="font-size:0.7rem;color:#ff7043">Traffic</span></div>
+            <div class="ctrl-row"><span class="ctrl-name">Status</span><span class="ctrl-val" style="color:#00c48c;font-size:0.72rem">Connected</span></div>
+            <div class="ctrl-row"><span class="ctrl-name">Port</span><span class="ctrl-val" style="font-size:0.72rem">5000</span></div>
+            <div class="ctrl-row"><span class="ctrl-name">Solver</span><span class="ctrl-val" style="color:#4e9af1;font-size:0.72rem">Python/CuPy</span></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ── Python CFD Engine Guide ── -->
     <div class="card" id="python-guide">
       <div class="card-header">
         <div>
           <div class="card-title">🐍 Full Python CFD Engine</div>
           <div style="font-size:0.78rem;color:var(--text-muted)">
-            High-fidelity Navier-Stokes solver with real OSMnx road data — runs as a standalone script
+            High-fidelity Navier-Stokes solver with real OSMnx road data
           </div>
         </div>
-        <span class="badge badge-ok">Script Ready</span>
+        <span class="badge badge-ok">Server Running</span>
       </div>
 
       <div class="grid-2" style="gap:24px">
-        <!-- How to Run -->
-        <div>
-          <div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);margin-bottom:12px">How to Run</div>
-          <div class="run-steps">
-            <div class="run-step">
-              <div class="run-step-num">1</div>
-              <div class="run-step-text">Install Python dependencies:<br>
-                <code>pip install numpy matplotlib osmnx networkx scikit-image pillow</code>
-              </div>
-            </div>
-            <div class="run-step">
-              <div class="run-step-num">2</div>
-              <div class="run-step-text"><em>Optional GPU</em> — install CuPy for CUDA acceleration:<br>
-                <code>pip install cupy-cuda12x</code>
-              </div>
-            </div>
-            <div class="run-step">
-              <div class="run-step-num">3</div>
-              <div class="run-step-text">Run the simulation script:<br>
-                <code>python cfd_simulation.py</code>
-              </div>
-            </div>
-            <div class="run-step">
-              <div class="run-step-num">4</div>
-              <div class="run-step-text">Use the interactive sliders in the matplotlib window to control wind speed, direction, traffic density, and background AQI in real-time.</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Architecture overview -->
         <div>
           <div style="font-size:0.82rem;font-weight:700;color:var(--text-primary);margin-bottom:12px">Architecture</div>
           <div style="display:flex;flex-direction:column;gap:10px">
@@ -323,10 +251,6 @@
             <div class="metric-card card-sm" style="--metric-color:#ff7043;padding:14px">
               <div class="metric-label">Road Network</div>
               <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px">Real OSMnx graph of Pragati Maidan (600m radius) · NetworkX shortest-path routing per vehicle</div>
-            </div>
-            <div class="metric-card card-sm" style="--metric-color:#8f3f97;padding:14px">
-              <div class="metric-label">Emission Model</div>
-              <div style="font-size:0.85rem;color:var(--text-secondary);margin-top:4px">Each vehicle injects density at its trail per frame · Buildings act as friction barriers trapping urban-canyon smog</div>
             </div>
             <div class="metric-card card-sm" style="--metric-color:#00c48c;padding:14px">
               <div class="metric-label">GPU Acceleration</div>
@@ -344,327 +268,59 @@
 <script src="app.js"></script>
 <script>
 // ============================================================
-// Browser CFD — Simplified Navier-Stokes on Canvas
+// API Hooks to the Python Flask Server
 // ============================================================
-const canvas = document.getElementById('cfd-canvas');
-const ctx    = canvas.getContext('2d');
+const FLASK_URL = "http://127.0.0.1:5000";
 
-const W  = 80;   // fluid grid cols
-const H  = 60;   // fluid grid rows
-const CW = canvas.width  / W;
-const CH = canvas.height / H;
-
-// Fluid arrays
-let density = new Float32Array(W * H);
-let density0= new Float32Array(W * H);
-let u       = new Float32Array(W * H);
-let v       = new Float32Array(W * H);
-let u0      = new Float32Array(W * H);
-let v0      = new Float32Array(W * H);
-
-const idx = (x, y) => Math.max(0, Math.min(W-1, x)) + Math.max(0, Math.min(H-1, y)) * W;
-
-function addAt(arr, x, y, val) {
-  if (x > 0 && x < W-1 && y > 0 && y < H-1) arr[idx(x, y)] += val;
+// Update the number next to the slider immediately when dragged
+function updateUI(slider, textId) {
+    document.getElementById(textId).textContent = slider.value;
 }
 
-function diffuse(b, x, x0, diff) {
-  const a = 0.1 * diff;
-  for (let k = 0; k < 4; k++) {
-    for (let j = 1; j < H-1; j++)
-    for (let i = 1; i < W-1; i++) {
-      x[idx(i,j)] = (x0[idx(i,j)] + a * (x[idx(i-1,j)] + x[idx(i+1,j)] + x[idx(i,j-1)] + x[idx(i,j+1)])) / (1 + 4*a);
-    }
-  }
+// Send the new values to Python silently in the background
+function sendParams() {
+    fetch(`${FLASK_URL}/set_params`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            wind_speed: document.getElementById('r-wind-spd').value,
+            wind_dir: document.getElementById('r-wind-dir').value,
+            traffic: document.getElementById('r-traffic').value,
+            bg_aqi: document.getElementById('r-bg-aqi').value
+        })
+    }).catch(err => console.log("Waiting for Python server..."));
 }
 
-function advect(b, d, d0, ux, vy) {
-  for (let j = 1; j < H-1; j++)
-  for (let i = 1; i < W-1; i++) {
-    let sx = i - ux[idx(i,j)] * 0.5;
-    let sy = j - vy[idx(i,j)] * 0.5;
-    sx = Math.max(0.5, Math.min(W-1.5, sx));
-    sy = Math.max(0.5, Math.min(H-1.5, sy));
-    const i0 = Math.floor(sx), i1 = i0+1;
-    const j0 = Math.floor(sy), j1 = j0+1;
-    const s1 = sx-i0, s0 = 1-s1;
-    const t1 = sy-j0, t0 = 1-t1;
-    d[idx(i,j)] = s0*(t0*d0[idx(i0,j0)] + t1*d0[idx(i0,j1)]) +
-                  s1*(t0*d0[idx(i1,j0)] + t1*d0[idx(i1,j1)]);
-  }
+function getAQIInfo(aqi) {
+  if (aqi >= 300) return { label: 'HAZARDOUS', color: 'var(--aqi-hazardous)' };
+  if (aqi >= 200) return { label: 'VERY UNHEALTHY', color: 'var(--aqi-vpoor)' };
+  if (aqi >= 150) return { label: 'UNHEALTHY', color: 'var(--danger)' };
+  if (aqi >= 100) return { label: 'POOR', color: 'var(--aqi-poor)' };
+  if (aqi >= 50)  return { label: 'MODERATE', color: 'var(--aqi-moderate)' };
+  return { label: 'GOOD', color: 'var(--aqi-good)' };
 }
 
-function project(ux, vy, p, div) {
-  for (let j=1;j<H-1;j++)
-  for (let i=1;i<W-1;i++) {
-    div[idx(i,j)] = -0.5*(ux[idx(i+1,j)]-ux[idx(i-1,j)] + vy[idx(i,j+1)]-vy[idx(i,j-1)])/W;
-    p[idx(i,j)] = 0;
-  }
-  for(let k=0;k<4;k++) {
-    for(let j=1;j<H-1;j++)
-    for(let i=1;i<W-1;i++) {
-      p[idx(i,j)]=(div[idx(i,j)]+p[idx(i-1,j)]+p[idx(i+1,j)]+p[idx(i,j-1)]+p[idx(i,j+1)])/4;
-    }
-  }
-  for(let j=1;j<H-1;j++)
-  for(let i=1;i<W-1;i++) {
-    ux[idx(i,j)] -= 0.5*W*(p[idx(i+1,j)]-p[idx(i-1,j)]);
-    vy[idx(i,j)] -= 0.5*H*(p[idx(i,j+1)]-p[idx(i,j-1)]);
-  }
-}
+// Ask Python for the live AQI every half second
+setInterval(() => {
+    fetch(`${FLASK_URL}/get_aqi`)
+    .then(response => response.json())
+    .then(data => {
+        let aqi = Math.round(data.aqi);
+        let info = getAQIInfo(aqi);
+        
+        document.getElementById('cfd-aqi-num').textContent = aqi;
+        document.getElementById('cfd-aqi-num').style.color = info.color;
+        document.getElementById('cfd-aqi-lbl').textContent = info.label;
+        document.getElementById('cfd-aqi-lbl').style.color = info.color;
+    })
+    .catch(err => {
+        document.getElementById('cfd-aqi-lbl').textContent = "SERVER OFFLINE";
+        document.getElementById('cfd-aqi-lbl').style.color = "var(--text-muted)";
+    });
+}, 500);
 
-function velStep() {
-  u0.set(u); v0.set(v);
-  diffuse(1, u, u0, 0.0001);
-  diffuse(2, v, v0, 0.0001);
-  project(u, v, u0, v0);
-  u0.set(u); v0.set(v);
-  advect(1, u, u0, u0, v0);
-  advect(2, v, v0, u0, v0);
-  project(u, v, u0, v0);
-}
-
-function densStep() {
-  const diff = parseFloat(document.getElementById('r-diff').value) * 0.0001;
-  const diss = parseFloat(document.getElementById('r-diss').value) / 100;
-  density0.set(density);
-  diffuse(0, density, density0, diff);
-  density0.set(density);
-  advect(0, density, density0, u, v);
-  for(let i=0;i<density.length;i++) density[i] *= diss;
-}
-
-// ── Road network (simplified grid roads matching Pragati Maidan pattern) ──
-const ROADS = [
-  // Horizontal main roads
-  {x1:0, y1:15, x2:W, y2:15},
-  {x1:0, y1:30, x2:W, y2:30},
-  {x1:0, y1:45, x2:W, y2:45},
-  // Vertical arteries
-  {x1:15, y1:0, x2:15, y2:H},
-  {x1:40, y1:0, x2:40, y2:H},
-  {x1:65, y1:0, x2:65, y2:H},
-  // Diagonal bypass (ring road style)
-  {x1:0,  y1:0, x2:20, y2:20},
-  {x1:60, y1:0, x2:W-1, y2:25},
-  {x1:0,  y1:H-1, x2:25, y2:40},
-  {x1:55, y1:H-1, x2:W-1, y2:35},
-];
-
-// Pre-compute road cells
-const roadCells = new Uint8Array(W * H);
-ROADS.forEach(r => {
-  const dx = r.x2 - r.x1, dy = r.y2 - r.y1;
-  const len = Math.sqrt(dx*dx+dy*dy);
-  const steps = Math.ceil(len * 1.5);
-  for(let s=0; s<=steps; s++) {
-    const t = s/steps;
-    const rx = Math.round(r.x1 + dx*t);
-    const ry = Math.round(r.y1 + dy*t);
-    if(rx>=0&&rx<W&&ry>=0&&ry<H) {
-      roadCells[idx(rx,ry)] = 1;
-      if(rx>0) roadCells[idx(rx-1,ry)]=1;
-      if(rx<W-1)roadCells[idx(rx+1,ry)]=1;
-    }
-  }
-});
-
-// Building blocks (non-road areas create obstacles)
-function isBuilding(x, y) { return roadCells[idx(x,y)] === 0; }
-
-// ── Vehicles ──
-class Vehicle {
-  constructor() { this.reset(); }
-  reset() {
-    // Pick a random road cell as start
-    this.roadIndex = Math.floor(Math.random() * ROADS.length);
-    const r = ROADS[this.roadIndex];
-    this.x = r.x1 + Math.random()*(r.x2-r.x1);
-    this.y = r.y1 + Math.random()*(r.y2-r.y1);
-    const ang = Math.atan2(r.y2-r.y1, r.x2-r.x1) + (Math.random()<0.5?0:Math.PI);
-    const spd = 0.3 + Math.random()*0.5;
-    this.dx = Math.cos(ang)*spd;
-    this.dy = Math.sin(ang)*spd;
-    this.life = 60 + Math.floor(Math.random()*120);
-    this.color = ['#4e9af1','#ff7043','#ffca28','#00c48c','#c97fd4'][Math.floor(Math.random()*5)];
-  }
-  update(emitRate) {
-    this.x += this.dx;
-    this.y += this.dy;
-    this.life--;
-    const gx = Math.round(this.x), gy = Math.round(this.y);
-    if(gx>0&&gx<W-1&&gy>0&&gy<H-1) {
-      addAt(density, gx, gy, emitRate*0.5);
-      addAt(u, gx, gy, this.dx*3);
-      addAt(v, gx, gy, this.dy*3);
-    }
-    if(this.x<0||this.x>W||this.y<0||this.y>H||this.life<=0) this.reset();
-  }
-}
-
-const vehicles = [];
-for(let i=0;i<15;i++) vehicles.push(new Vehicle());
-
-// ── Mouse click to add pollutant source ──
-canvas.addEventListener('click', e => {
-  const rect = canvas.getBoundingClientRect();
-  const mx = Math.floor((e.clientX - rect.left) / CW);
-  const my = Math.floor((e.clientY - rect.top)  / CH);
-  for(let dy=-2;dy<=2;dy++)
-  for(let dx=-2;dx<=2;dx++) addAt(density, mx+dx, my+dy, 80);
-});
-
-// ── ImageData pixel buffer ──
-const imgData = ctx.createImageData(canvas.width, canvas.height);
-
-// Inferno colormap (sampled)
-const INFERNO = [
-  [0,0,4],[20,11,52],[57,15,111],[96,19,110],[132,33,107],[168,45,100],
-  [201,60,88],[227,83,70],[244,115,55],[252,150,39],[254,188,43],[252,228,75],[252,255,164]
-];
-
-function densityToColor(d) {
-  const t = Math.min(d / 120, 1);
-  const fi= t * (INFERNO.length-1);
-  const lo= Math.floor(fi), hi= Math.min(lo+1, INFERNO.length-1);
-  const frac = fi-lo;
-  return [
-    INFERNO[lo][0]*(1-frac)+INFERNO[hi][0]*frac,
-    INFERNO[lo][1]*(1-frac)+INFERNO[hi][1]*frac,
-    INFERNO[lo][2]*(1-frac)+INFERNO[hi][2]*frac,
-  ];
-}
-
-// ── Main render ──
-let frame = 0, running = true;
-
-function render() {
-  // Background fill with road network
-  for(let j=0;j<H;j++)
-  for(let i=0;i<W;i++) {
-    const d = density[idx(i,j)];
-    let r,g,b,a;
-    if(roadCells[idx(i,j)]) {
-      // Road: grey + smoke overlay
-      const c = densityToColor(d);
-      r = 40 + c[0]*0.6; g = 50 + c[1]*0.6; b = 60 + c[2]*0.6; a = 255;
-    } else {
-      // Building: dark grey + mild smoke
-      const c = densityToColor(d*0.5);
-      r = 25+c[0]*0.3; g = 30+c[1]*0.3; b = 38+c[2]*0.3; a = 255;
-    }
-    // Blit to pixel buffer (each sim cell = CW×CH pixels)
-    for(let py=0;py<CH;py++)
-    for(let px=0;px<CW;px++) {
-      const pid = ((j*CH+py)*canvas.width + (i*CW+px)) * 4;
-      imgData.data[pid]   = Math.min(255, r);
-      imgData.data[pid+1] = Math.min(255, g);
-      imgData.data[pid+2] = Math.min(255, b);
-      imgData.data[pid+3] = a;
-    }
-  }
-  ctx.putImageData(imgData, 0, 0);
-
-  // Draw vehicles as dots
-  vehicles.forEach(car => {
-    ctx.beginPath();
-    ctx.arc(car.x * CW, car.y * CH, 3.5, 0, Math.PI*2);
-    ctx.fillStyle = car.color;
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
-    // Exhaust trail
-    ctx.beginPath();
-    ctx.arc((car.x - car.dx*2)*CW, (car.y - car.dy*2)*CH, 1.5, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(180,180,180,0.3)';
-    ctx.fill();
-  });
-
-  // Wind arrows
-  ctx.strokeStyle = 'rgba(78,154,241,0.25)';
-  ctx.lineWidth = 0.8;
-  const wx = parseFloat(document.getElementById('r-wind-spd').value);
-  const wd = parseFloat(document.getElementById('r-wind-dir').value) * Math.PI / 180;
-  for(let j=0;j<H;j+=8)
-  for(let i=0;i<W;i+=10) {
-    const scale = wx * 0.02;
-    const ox = i*CW+CW/2, oy = j*CH+CH/2;
-    const ex = ox + Math.cos(wd)*scale*10;
-    const ey = oy + Math.sin(wd)*scale*10;
-    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(ex,ey); ctx.stroke();
-  }
-}
-
-function step() {
-  if(!running) return;
-  frame++;
-  document.getElementById('stat-frame').textContent = frame;
-
-  // Read sliders
-  const windSpd = parseFloat(document.getElementById('r-wind-spd').value) * 0.003;
-  const windDir = parseFloat(document.getElementById('r-wind-dir').value) * Math.PI / 180;
-  const trafficDens = parseFloat(document.getElementById('r-traffic').value);
-  const emitRate = parseFloat(document.getElementById('r-emit').value);
-  const bgAQI = parseFloat(document.getElementById('r-bg-aqi').value);
-
-  // Set wind globally
-  for(let j=1;j<H-1;j++)
-  for(let i=1;i<W-1;i++) {
-    if(roadCells[idx(i,j)]) {
-      u[idx(i,j)] += (Math.cos(windDir)*windSpd - u[idx(i,j)]) * 0.05;
-      v[idx(i,j)] += (Math.sin(windDir)*windSpd - v[idx(i,j)]) * 0.05;
-    } else {
-      u[idx(i,j)] *= 0.85;
-      v[idx(i,j)] *= 0.85;
-    }
-  }
-
-  // Spawn vehicles at traffic density
-  while(vehicles.length < trafficDens) vehicles.push(new Vehicle());
-  while(vehicles.length > trafficDens) vehicles.pop();
-
-  vehicles.forEach(car => car.update(emitRate));
-  document.getElementById('car-count').textContent = vehicles.length;
-
-  // Background AQI baseline
-  const bgBase = bgAQI * 0.15;
-  for(let i=0;i<density.length;i++) density[i] += (bgBase - density[i]) * 0.005;
-
-  // Fluid solve
-  velStep();
-  densStep();
-
-  // AQI from mean density
-  let sum = 0;
-  for(let i=0;i<density.length;i++) sum += density[i];
-  const rawMean = sum / density.length;
-  const liveAQI = Math.min(500, bgAQI + rawMean * 5.5);
-
-  const aqiInfo = getAQIInfo(Math.round(liveAQI));
-  document.getElementById('cfd-aqi-num').textContent = Math.round(liveAQI);
-  document.getElementById('cfd-aqi-num').style.color = aqiInfo.color;
-  document.getElementById('cfd-aqi-lbl').textContent = aqiInfo.label;
-  document.getElementById('cfd-aqi-lbl').style.color  = aqiInfo.color;
-
-  render();
-  requestAnimationFrame(step);
-}
-
-function toggleSim() {
-  running = !running;
-  document.getElementById('btn-play').textContent = running ? '⏸ Pause' : '▶ Play';
-  if(running) step();
-}
-
-function resetSim() {
-  density.fill(0); density0.fill(0);
-  u.fill(0); v.fill(0); u0.fill(0); v0.fill(0);
-  frame = 0;
-}
-
-// Start
-step();
+// Initialize slider parameters on page load
+sendParams();
 </script>
 </body>
 </html>
