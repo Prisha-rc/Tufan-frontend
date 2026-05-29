@@ -29,7 +29,7 @@ const CURRENT = {
   humidity: 58,
   windSpeed: 12.4,
   lightPollution: 42,   // Lux night-sky reading (lower = more polluted sky)
-  location: 'Connaught Place, New Delhi',
+  location: 'Kolkata, West Bengal',
   lastUpdated: new Date().toISOString(),
 };
 
@@ -187,11 +187,11 @@ const AQI_HEATMAP_POINTS = [
 
 // ------ Construction Site Alerts ------
 const CONSTRUCTION_SITES = [
-  { id: 'CS-001', lat: 28.6490, lng: 77.1025, name: 'NH48 Widening Project',        currentAQI: 312, threshold: 200, status: 'ALERT',  contractor: 'XYZ Infra Pvt Ltd' },
-  { id: 'CS-002', lat: 28.7000, lng: 77.2800, name: 'Shahdara Elevated Corridor',   currentAQI: 185, threshold: 200, status: 'OK',     contractor: 'ABC Constructions' },
-  { id: 'CS-003', lat: 28.5500, lng: 77.2500, name: 'Badarpur Metro Extension',     currentAQI: 278, threshold: 200, status: 'ALERT',  contractor: 'Delhi Metro Rail Corp' },
-  { id: 'CS-004', lat: 28.6100, lng: 77.0800, name: 'Dwarka Expressway Phase 2',    currentAQI: 156, threshold: 200, status: 'OK',     contractor: 'National Highways Auth' },
-  { id: 'CS-005', lat: 28.5300, lng: 77.1800, name: 'Mehrauli Flyover Construction',currentAQI: 224, threshold: 200, status: 'ALERT',  contractor: 'PWD Delhi' },
+  { id: 'CS-001', lat: 22.5835, lng: 88.4235, name: 'New Town Skywalk Expansion',      currentAQI: 312, threshold: 200, status: 'ALERT',  contractor: 'WBCIDCO' },
+  { id: 'CS-002', lat: 22.5186, lng: 88.3842, name: 'Jadavpur Metro Line 6 Site',      currentAQI: 185, threshold: 200, status: 'OK',     contractor: 'RVNL' },
+  { id: 'CS-003', lat: 22.5540, lng: 88.3385, name: 'Majerhat Bridge Reconstruction',  currentAQI: 278, threshold: 200, status: 'ALERT',  contractor: 'HRBC' },
+  { id: 'CS-004', lat: 22.5935, lng: 88.4320, name: 'New Town-Airport Metro Corridor', currentAQI: 156, threshold: 200, status: 'OK',     contractor: 'RVNL' },
+  { id: 'CS-005', lat: 22.5726, lng: 88.3639, name: 'Esplanade Metro Interchange',     currentAQI: 224, threshold: 200, status: 'ALERT',  contractor: 'KMRCL' },
 ];
 
 // ------ Road Condition + AQI Prediction (Random Forest model output) ------
@@ -229,23 +229,23 @@ const CORRELATION_MATRIX = {
 
 // ------ Government Hotspot Zones ------
 const HOTSPOT_ZONES = [
-  { lat: 28.6300, lng: 77.3500, radius: 1800, aqi: 320, name: 'Anand Vihar',    source: 'Traffic + Industrial' },
-  { lat: 28.5500, lng: 77.2500, radius: 1500, aqi: 280, name: 'Badarpur',       source: 'Traffic + Stubble' },
-  { lat: 28.6490, lng: 77.1025, radius: 1200, aqi: 310, name: 'Dwarka (NH48)',  source: 'Construction Dust' },
-  { lat: 28.7000, lng: 77.2800, radius: 1400, aqi: 260, name: 'Shahdara',       source: 'Industrial + Traffic' },
-  { lat: 28.5800, lng: 77.3200, radius: 1000, aqi: 285, name: 'Mayur Vihar',    source: 'Traffic' },
+  { lat: 22.5415, lng: 88.3376, radius: 1800, aqi: 320, name: 'Esplanade-BBD Bagh',   source: 'Heavy Traffic + Old Vehicles' },
+  { lat: 22.6500, lng: 88.4500, radius: 1500, aqi: 280, name: 'Airport-VIP Road',     source: 'Traffic + Construction Dust' },
+  { lat: 22.5350, lng: 88.3150, radius: 1200, aqi: 310, name: 'Taratala-Majerhat',    source: 'Heavy Freight + Construction' },
+  { lat: 22.5800, lng: 88.4200, radius: 1400, aqi: 260, name: 'Ultadanga-EM Bypass', source: 'Traffic Congestion' },
+  { lat: 22.5200, lng: 88.3500, radius: 1000, aqi: 285, name: 'Garia-Jadavpur',      source: 'Traffic + Road Construction' },
 ];
 
 // ------ Government Mitigation Recommendations ------
 const GOVT_MITIGATIONS = [
-  { priority: 'High',   action: 'Deploy water-sprinkler trucks on NH48 and Badarpur stretch to suppress construction dust' },
-  { priority: 'High',   action: 'Impose odd-even vehicle restrictions in Anand Vihar and Shahdara zones (AQI > 300)' },
-  { priority: 'High',   action: 'Issue stop-work notice to XYZ Infra Pvt Ltd (NH48 site, AQI 312)' },
-  { priority: 'Medium', action: 'Install green anti-smog nets at all active construction sites' },
-  { priority: 'Medium', action: 'Coordinate with Punjab/Haryana on stubble burning crackdown (22% source share)' },
-  { priority: 'Medium', action: 'Increase frequency of mechanical sweeping on Ring Road and Mall Road' },
-  { priority: 'Low',    action: 'Plant additional trees along Chandni Chowk corridor as long-term buffer' },
-  { priority: 'Low',    action: 'Upgrade street-level AQI sensor network in Rohini and Dwarka' },
+  { priority: 'High',    action: 'Deploy water-sprinkler trucks on EM Bypass and VIP Road stretches to suppress dust' },
+  { priority: 'High',    action: 'Strict enforcement of heavy vehicle entry restrictions in Esplanade (AQI > 300)' },
+  { priority: 'High',    action: 'Issue stop-work notice to major construction sites in Taratala and New Town' },
+  { priority: 'Medium',  action: 'Mandate anti-smog guns and green nets at all Metro Line-6 construction sites' },
+  { priority: 'Medium',  action: 'Coordinate with West Bengal Pollution Control Board for industrial emission audit' },
+  { priority: 'Medium',  action: 'Increase frequency of mechanical sweeping on AJC Bose Road and EM Bypass' },
+  { priority: 'Low',     action: 'Plant dense air-purifying trees along the Taratala industrial corridor' },
+  { priority: 'Low',     action: 'Upgrade real-time air sensor density across the Salt Lake and New Town sectors' },
 ];
 
 // ------ Admin: Users ------
@@ -258,13 +258,13 @@ const ADMIN_USERS = [
   { id: 6, name: 'Rohit Verma',    email: 'rohit@citizen.in',      role: 'Citizen',    status: 'Active',   lastLogin: '2026-03-27' },
   { id: 7, name: 'Admin User',     email: 'admin@airwatch.in',     role: 'Admin',      status: 'Active',   lastLogin: '2026-03-28' },
 ];
-
-// ------ Admin: System Alerts Log ------
 const SYSTEM_ALERTS = [
-  { time: '01:02', type: 'AQI Alert',       severity: 'Critical', message: 'NH48 site AQI crossed 300 threshold' },
-  { time: '00:47', type: 'Road Alert',      severity: 'High',     message: 'New pothole reported: Badarpur Border (severe)' },
-  { time: '00:15', type: 'AQI Alert',       severity: 'High',     message: 'Anand Vihar AQI reached 320 — Very Poor' },
-  { time: '23:58', type: 'Construction',    severity: 'Critical', message: 'Mehrauli site AQI 224 — exceeds 200 limit' },
-  { time: '23:30', type: 'Sensor Offline',  severity: 'Medium',   message: 'Sensor #DL-042 (Rohini) offline — reconnecting' },
-  { time: '22:45', type: 'Road Alert',      severity: 'Medium',   message: 'Damage reported on NH48 stretch — patrol assigned' },
+  { time: '01:02', type: 'AQI Alert',      severity: 'Critical', message: 'New Town skywalk site AQI crossed 300 threshold' },
+  { time: '00:47', type: 'Road Alert',     severity: 'High',     message: 'Waterlogging reported: EM Bypass (near Ruby Hospital)' },
+  { time: '00:15', type: 'AQI Alert',      severity: 'High',     message: 'Esplanade area AQI reached 320 — Hazardous' },
+  { time: '23:58', type: 'Construction',   severity: 'Critical', message: 'Taratala site AQI 224 — exceeds 200 limit' },
+  { time: '23:30', type: 'Sensor Offline', severity: 'Medium',   message: 'Sensor #KOL-088 (Salt Lake) offline — reconnecting' },
+  { time: '22:45', type: 'Road Alert',     severity: 'Medium',   message: 'Traffic congestion reported on AJC Bose Road — patrol assigned' },
 ];
+// ------ Admin: System Alerts Log ------
+
