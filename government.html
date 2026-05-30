@@ -47,7 +47,7 @@
     <div class="page-header">
       <div>
         <div class="page-title">Government Command Dashboard</div>
-        <div class="page-subtitle">Real-time AQI sources, road conditions, and site alerts — New Delhi</div>
+        <div class="page-subtitle">Real-time AQI sources, road conditions, and site alerts — West Bengal</div>
       </div>
     </div>
 
@@ -410,7 +410,8 @@ function renderRoadPrediction() {
 
 // ── Hotspot Map ──
 function initHotspotMap() {
-  const map = L.map('hotspot-map', { zoomControl: true }).setView([28.6139, 77.2090], 11);
+  // New Kolkata midpoint
+  const map = L.map('hotspot-map', { zoomControl: true }).setView([22.5694, 88.4810], 11);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution:'© OpenStreetMap contributors © CARTO', maxZoom:19
   }).addTo(map);
