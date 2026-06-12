@@ -34,75 +34,77 @@
     </div>
 
     <div class="login-cards">
-      <!-- ── ADMIN ── -->
       <div class="login-card" style="--card-gradient: linear-gradient(90deg,#8f3f97,#4e9af1)">
         <div class="login-card-icon" style="background:rgba(143,63,151,0.18)">🛡️</div>
         <div class="login-card-title">Administrator</div>
         <div class="login-card-desc">Manage users, configure data sources, review system-wide alerts</div>
         <div class="form-group">
           <label for="admin-email">Email</label>
-          <input id="admin-email" class="form-input" type="email" placeholder="admin@airwatch.in" />
+          <input id="admin-email" class="form-input" type="email" />
         </div>
         <div class="form-group">
           <label for="admin-pass">Password</label>
-          <input id="admin-pass" class="form-input" type="password" placeholder="••••••••" />
+          <input id="admin-pass" class="form-input" type="password" />
         </div>
         <p id="admin-error" class="err-msg"></p>
         <button class="btn-login" onclick="handleLogin('admin')"
           style="background:linear-gradient(135deg,#8f3f97,#4e9af1);color:#fff">
           🛡️ Sign In as Admin
         </button>
-        <div class="login-hint">📧 admin@airwatch.in · 🔑 admin123</div>
       </div>
 
-      <!-- ── GOVERNMENT ── -->
       <div class="login-card" style="--card-gradient: linear-gradient(90deg,#4e9af1,#00c48c)">
         <div class="login-card-icon" style="background:rgba(78,154,241,0.18)">🏛️</div>
         <div class="login-card-title">Government</div>
         <div class="login-card-desc">Hotspot analysis, road alerts, AQI source tracking & mitigation</div>
         <div class="form-group">
           <label for="govt-email">Email</label>
-          <input id="govt-email" class="form-input" type="email" placeholder="govt@airwatch.in" />
+          <input id="govt-email" class="form-input" type="email" />
         </div>
         <div class="form-group">
           <label for="govt-pass">Password</label>
-          <input id="govt-pass" class="form-input" type="password" placeholder="••••••••" />
+          <input id="govt-pass" class="form-input" type="password" />
         </div>
         <p id="govt-error" class="err-msg"></p>
         <button class="btn-login" onclick="handleLogin('govt')"
           style="background:linear-gradient(135deg,#4e9af1,#00c48c);color:#fff">
           🏛️ Sign In as Government
         </button>
-        <div class="login-hint">📧 govt@airwatch.in · 🔑 govt123</div>
       </div>
 
-      <!-- ── CITIZEN ── -->
       <div class="login-card" style="--card-gradient: linear-gradient(90deg,#00c48c,#ffca28)">
         <div class="login-card-icon" style="background:rgba(0,196,140,0.18)">👤</div>
         <div class="login-card-title">Citizen</div>
         <div class="login-card-desc">Real-time AQI, health advisories, predictions & pollution maps</div>
         <div class="form-group">
           <label for="citizen-email">Email</label>
-          <input id="citizen-email" class="form-input" type="email" placeholder="citizen@airwatch.in" />
+          <input id="citizen-email" class="form-input" type="email" />
         </div>
         <div class="form-group">
           <label for="citizen-pass">Password</label>
-          <input id="citizen-pass" class="form-input" type="password" placeholder="••••••••" />
+          <input id="citizen-pass" class="form-input" type="password" />
+          <div style="text-align: right; margin-top: 5px;">
+            <a href="#" onclick="handleCitizenForgotPassword()" style="color: #00c48c; font-size: 0.8rem; text-decoration: none;">Forgot Password?</a>
+          </div>
         </div>
         <p id="citizen-error" class="err-msg"></p>
-        <button class="btn-login" onclick="handleLogin('citizen')"
-          style="background:linear-gradient(135deg,#00c48c,#ffca28);color:#060b14">
-          👤 Sign In as Citizen
+        <button class="btn-login" onclick="handleLogin('citizen', false)"
+          style="background:linear-gradient(135deg,#00c48c,#ffca28);color:#060b14; margin-bottom: 10px;">
+          👤 Sign In
         </button>
-        <div class="login-hint">📧 citizen@airwatch.in · 🔑 citizen123</div>
+        <button class="btn-login" onclick="handleLogin('citizen', true)"
+          style="background:transparent; border: 1px solid #00c48c; color:#00c48c;">
+          ✨ Create Account
+        </button>
       </div>
     </div>
 
     <p style="margin-top:40px;font-size:0.75rem;color:var(--text-muted);z-index:1">
-      © 2026 AirWatch · Environmental Monitoring Platform · New Delhi
+      © 2026 AirWatch · Environmental Monitoring Platform · West Bengal
     </p>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
   <script>
     // Particle generator
