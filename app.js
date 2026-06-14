@@ -72,9 +72,10 @@ async function handleLogin(role, isSignUp = false) {
   }
 }
 
-async function handleCitizenForgotPassword() {
-  const emailEl = document.getElementById('citizen-email');
-  const errEl = document.getElementById('citizen-error');
+// ---- UNIFIED FORGOT PASSWORD HANDLER ----
+async function handleForgotPassword(role) {
+  const emailEl = document.getElementById(`${role}-email`);
+  const errEl = document.getElementById(`${role}-error`);
   const email = emailEl.value.trim();
 
   errEl.style.display = 'none';
@@ -87,9 +88,14 @@ async function handleCitizenForgotPassword() {
   if (!supabaseClient) return;
 
   try {
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+    // Exact GitHub Pages path to prevent 404 errors
+    const targetRedirectUrl = 'https://prisha-rc.github.io/Tufan-frontend/reset-password.html';
+
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: targetRedirectUrl,
+    });
     if (error) throw error;
-    alert('Password reset link sent to your email!');
+    alert('Password reset link sent to your email! Please check your inbox.');
   } catch (error) {
     showError(errEl, emailEl, error.message);
   }
