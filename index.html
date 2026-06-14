@@ -64,6 +64,9 @@
         <div class="form-group">
           <label for="govt-pass">Password</label>
           <input id="govt-pass" class="form-input" type="password" />
+          <div style="text-align: right; margin-top: 5px;">
+            <a href="#" onclick="handleForgotPassword('govt')" style="color: #4e9af1; font-size: 0.8rem; text-decoration: none;">Forgot Password?</a>
+          </div>
         </div>
         <p id="govt-error" class="err-msg"></p>
         <button class="btn-login" onclick="handleLogin('govt')"
@@ -84,7 +87,7 @@
           <label for="citizen-pass">Password</label>
           <input id="citizen-pass" class="form-input" type="password" />
           <div style="text-align: right; margin-top: 5px;">
-            <a href="#" onclick="handleCitizenForgotPassword()" style="color: #00c48c; font-size: 0.8rem; text-decoration: none;">Forgot Password?</a>
+            <a href="#" onclick="handleForgotPassword('citizen')" style="color: #00c48c; font-size: 0.8rem; text-decoration: none;">Forgot Password?</a>
           </div>
         </div>
         <p id="citizen-error" class="err-msg"></p>
