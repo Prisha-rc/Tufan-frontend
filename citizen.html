@@ -205,6 +205,9 @@
 <script src="app.js"></script>
 
 <script>
+// ==========================================
+// 1. DYNAMIC RECENT TRENDS CHART SETUP
+// ==========================================
 let liveLabels = [];
 let liveAqiData = [];
 let livePm25Data = [];
@@ -244,6 +247,9 @@ function switchTrend(mode, btn) {
   trendChart.update();
 }
 
+// ==========================================
+// 2. LIVE DASHBOARD DOM REPAINT ENGINE
+// ==========================================
 function updateDashboardUI(payload) {
   document.getElementById('pm25-val').textContent = payload.pm25;
   document.getElementById('pm10-val').textContent = payload.pm10;
@@ -267,7 +273,7 @@ function updateDashboardUI(payload) {
   document.getElementById('pm25-avg').textContent = (livePm25Data.reduce((a,b)=>a+b,0)/livePm25Data.length).toFixed(1);
   document.getElementById('pm10-avg').textContent = (livePm10Data.reduce((a,b)=>a+b,0)/livePm10Data.length).toFixed(1);
 
-  // --- PREDICTION CHART UPDATES ---
+  // --- LIVE PREDICTION CHART OVERRIDES ---
   if (payload.pred_aqi && payload.pred_temp) {
     const maxPred = Math.max(...payload.pred_aqi);
     const peakInfo = getAQIInfo(maxPred);
@@ -371,7 +377,6 @@ function renderLightPollution(lux) {
   document.getElementById('lp-tip').style.cssText = `border-color:${lpInfo.color}55;background:${lpInfo.color}11;border-radius:var(--radius-sm);padding:12px 14px;font-size:0.83rem;color:var(--text-secondary);border:1px solid`;
 }
 
-// Initial Empty Charts Setup
 function buildPredCharts() {
   new Chart(document.getElementById('pred-aqi-chart').getContext('2d'), {
     type: 'bar',
@@ -386,15 +391,16 @@ function buildPredCharts() {
   });
 }
 
-// HIVEMQ WEBSOCKET CONNECTION
-const MQTT_BROKER = "b9b98c95be145b0b35cc824964f6f7c.s1.eu.hivemq.cloud"; // PASTE YOUR URL HERE
+// ==========================================
+// 3. SECURE HIVEMQ WEBSOCKET CONFIGURATION
+// ==========================================
+const MQTT_BROKER = "b9b98c95be145b0b35cc824964f6f7c.s1.eu.hivemq.cloud"; 
 const MQTT_PORT = 8884; 
 const MQTT_USER = "airwatch_user";
 const MQTT_PASS = "AirWatchIoT2026!";
 
 const clientId = "web-client-" + Math.random().toString(16).substr(2, 8);
-// Updated constructor style for Paho 1.1.0
-const client = new Paho.Client(MQTT_BROKER, Number(MQTT_PORT),"/mqtt", clientId);
+const client = new Paho.Client(MQTT_BROKER, Number(MQTT_PORT), "/mqtt", clientId);
 
 client.onConnectionLost = function(responseObject) {
   if (responseObject.errorCode !== 0) {
@@ -415,8 +421,8 @@ client.onMessageArrived = function(message) {
 
 const options = {
   timeout: 3,
-  useSSL: true, // This must remain true for HiveMQ Cloud
-  userName: MQTT_USER.trim(), // Removes any accidental trailing spaces
+  useSSL: true, 
+  userName: MQTT_USER.trim(), 
   password: MQTT_PASS.trim(),
   onSuccess: function() {
     console.log("Connected to HiveMQ WebSockets!");
@@ -429,14 +435,13 @@ const options = {
   }
 };
 
-// Start the connection attempt
-console.log("Attempting secure handshake...");
-client.connect(options);
-
+// Orchestrate initialization setup inside page lifecycle listener
 document.addEventListener('DOMContentLoaded', () => {
   buildPredCharts();
   renderLightPollution(CURRENT.lightPollution || 85);
-  client.connect(options);
+  
+  console.log("Attempting single secure handshake...");
+  client.connect(options); 
 });
 </script>
 </body>
