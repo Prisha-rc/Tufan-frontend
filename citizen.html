@@ -392,16 +392,14 @@ function buildPredCharts() {
 }
 
 // ==========================================
-// 3. SECURE HIVEMQ WEBSOCKET CONFIGURATION
+// 3. SECURE PUBLIC WEBSOCKET CONFIGURATION
 // ==========================================
 const MQTT_BROKER = "broker.emqx.io"; 
 const MQTT_PORT = 8084; 
-const MQTT_USER = "";
-const MQTT_PASS = "";
+const MQTT_USER = ""; 
+const MQTT_PASS = ""; 
 
-const clientId = "web-client-" + Math.random().toString(16).substr(2, 8);
-
-// The path MUST be "/mqtt" for HiveMQ WebSockets 
+const clientId = "web-client-tufan-" + Math.random().toString(16).substr(2, 8);
 const client = new Paho.Client(MQTT_BROKER, Number(MQTT_PORT), "/mqtt", clientId);
 
 client.onConnectionLost = function(responseObject) {
@@ -415,32 +413,48 @@ client.onConnectionLost = function(responseObject) {
 client.onMessageArrived = function(message) {
   try {
     const payload = JSON.parse(message.payloadString);
+    
+    // Save backup snapshot to local memory storage
+    localStorage.setItem('last_known_airwatch_data', message.payloadString);
+    
     updateDashboardUI(payload);
   } catch (e) {
     console.error("Failed to parse MQTT message", e);
   }
 };
 
-// Explicit protocol downgrade (mqttVersion: 4) bypasses Connack 5 issues
 const options = {
-  timeout: 5,                 // Drop timeout slightly for faster reconnection
-  useSSL: true,                // MUST remain true for GitHub Pages compatibility
-  cleanSession: true,          // Starts a fresh session without tracking old states
+  timeout: 5,                 
+  useSSL: true,                
+  cleanSession: true,
   onSuccess: function() {
     console.log("Connected to Public EMQX WebSockets!");
-    alert("🚀 SUCCESS: Connected to Dashboard Pipeline!");
-    client.subscribe("tufan/airwatch/live"); // Subscribes to your unique team topic
+    document.getElementById('wind-val').textContent = 'Sensor Online';
+    document.getElementById('wind-val').style.color = '#00c48c';
+    client.subscribe("tufan/airwatch/live"); 
   },
   onFailure: function(message) {
     console.error("MQTT Connection failed:", message);
-    alert("❌ FAILURE: Cannot connect. Reason: " + message.errorMessage);
   }
 };
 
-// Single handshake inside the listener
+// Orchestrate initialization setup inside page lifecycle listener
 document.addEventListener('DOMContentLoaded', () => {
   buildPredCharts();
-  renderLightPollution(CURRENT.lightPollution || 85);
+  
+  // FALLBACK BACKUP: Load the last known data if the hardware layer is offline
+  const cachedData = localStorage.getItem('last_known_airwatch_data');
+  if (cachedData) {
+    console.log("Loading offline data set cache...");
+    const backupPayload = JSON.parse(cachedData);
+    updateDashboardUI(backupPayload);
+    
+    // Alert user that values are standing snapshots
+    document.getElementById('wind-val').textContent = 'Displaying Cached Data';
+    document.getElementById('wind-val').style.color = '#ffca28';
+  } else {
+    renderLightPollution(CURRENT.lightPollution || 85);
+  }
   
   console.log("Attempting single structured handshake...");
   client.connect(options); 
