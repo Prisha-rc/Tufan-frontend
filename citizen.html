@@ -400,7 +400,9 @@ const MQTT_USER = "airwatch_user";
 const MQTT_PASS = "AirWatchIoT2026!";
 
 const clientId = "web-client-" + Math.random().toString(16).substr(2, 8);
-const client = new Paho.Client(MQTT_BROKER, Number(MQTT_PORT), "", clientId);
+
+// The path MUST be "/mqtt" for HiveMQ WebSockets 
+const client = new Paho.Client(MQTT_BROKER, Number(MQTT_PORT), "/mqtt", clientId);
 
 client.onConnectionLost = function(responseObject) {
   if (responseObject.errorCode !== 0) {
@@ -419,9 +421,12 @@ client.onMessageArrived = function(message) {
   }
 };
 
+// Explicit protocol downgrade (mqttVersion: 4) bypasses Connack 5 issues
 const options = {
-  timeout: 3,
-  useSSL: true, 
+  timeout: 10,                 
+  useSSL: true,                
+  mqttVersion: 4,              
+  cleanSession: true,
   userName: MQTT_USER.trim(), 
   password: MQTT_PASS.trim(),
   onSuccess: function() {
@@ -435,12 +440,12 @@ const options = {
   }
 };
 
-// Orchestrate initialization setup inside page lifecycle listener
+// Single handshake inside the listener
 document.addEventListener('DOMContentLoaded', () => {
   buildPredCharts();
   renderLightPollution(CURRENT.lightPollution || 85);
   
-  console.log("Attempting single secure handshake...");
+  console.log("Attempting single structured handshake...");
   client.connect(options); 
 });
 </script>
