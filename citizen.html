@@ -414,22 +414,24 @@ client.onMessageArrived = function(message) {
 };
 
 const options = {
-  useSSL: true,
-  userName: MQTT_USER,
-  password: MQTT_PASS,
+  timeout: 3,
+  useSSL: true, // This must remain true for HiveMQ Cloud
+  userName: MQTT_USER.trim(), // Removes any accidental trailing spaces
+  password: MQTT_PASS.trim(),
   onSuccess: function() {
     console.log("Connected to HiveMQ WebSockets!");
-    alert("🚀 SUCCESS: Connected to HiveMQ Broker!"); // This will pop up on success
+    alert("🚀 SUCCESS: Connected to HiveMQ Broker!");
     client.subscribe("airwatch/live");
   },
   onFailure: function(message) {
     console.error("MQTT Connection failed:", message);
-    alert("❌ FAILURE: Cannot connect. Reason: " + message.errorMessage); // This will pop up on failure
+    alert("❌ FAILURE: Cannot connect. Reason: " + message.errorMessage + " (Code: " + message.errorCode + ")");
   }
 };
 
-// Also add a log right before we attempt to connect so we know the script is executing
-console.log("🔄 Attempting to connect to broker: " + MQTT_BROKER);
+// Start the connection attempt
+console.log("Attempting secure handshake...");
+client.connect(options);
 
 document.addEventListener('DOMContentLoaded', () => {
   buildPredCharts();
