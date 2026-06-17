@@ -394,10 +394,10 @@ function buildPredCharts() {
 // ==========================================
 // 3. SECURE HIVEMQ WEBSOCKET CONFIGURATION
 // ==========================================
-const MQTT_BROKER = "b9b98c95be145b0b35cc824964f6f7c.s1.eu.hivemq.cloud"; 
-const MQTT_PORT = 8884; 
-const MQTT_USER = "tufan_node";
-const MQTT_PASS = "TufanSecure2026";
+const MQTT_BROKER = "broker.emqx.io"; 
+const MQTT_PORT = 8084; 
+const MQTT_USER = "";
+const MQTT_PASS = "";
 
 const clientId = "web-client-" + Math.random().toString(16).substr(2, 8);
 
@@ -423,20 +423,17 @@ client.onMessageArrived = function(message) {
 
 // Explicit protocol downgrade (mqttVersion: 4) bypasses Connack 5 issues
 const options = {
-  timeout: 10,                 
-  useSSL: true,                
-  mqttVersion: 4,              
-  cleanSession: true,
-  userName: MQTT_USER.trim(), 
-  password: MQTT_PASS.trim(),
+  timeout: 5,                 // Drop timeout slightly for faster reconnection
+  useSSL: true,                // MUST remain true for GitHub Pages compatibility
+  cleanSession: true,          // Starts a fresh session without tracking old states
   onSuccess: function() {
-    console.log("Connected to HiveMQ WebSockets!");
-    alert("🚀 SUCCESS: Connected to HiveMQ Broker!");
-    client.subscribe("airwatch/live");
+    console.log("Connected to Public EMQX WebSockets!");
+    alert("🚀 SUCCESS: Connected to Dashboard Pipeline!");
+    client.subscribe("tufan/airwatch/live"); // Subscribes to your unique team topic
   },
   onFailure: function(message) {
     console.error("MQTT Connection failed:", message);
-    alert("❌ FAILURE: Cannot connect. Reason: " + message.errorMessage + " (Code: " + message.errorCode + ")");
+    alert("❌ FAILURE: Cannot connect. Reason: " + message.errorMessage);
   }
 };
 
