@@ -418,12 +418,17 @@ const options = {
   password: MQTT_PASS,
   onSuccess: function() {
     console.log("Connected to HiveMQ WebSockets!");
+    alert("🚀 SUCCESS: Connected to HiveMQ Broker!"); // This will pop up on success
     client.subscribe("airwatch/live");
   },
   onFailure: function(message) {
-    console.log("MQTT Connection failed: " + message.errorMessage);
+    console.error("MQTT Connection failed:", message);
+    alert("❌ FAILURE: Cannot connect. Reason: " + message.errorMessage); // This will pop up on failure
   }
 };
+
+// Also add a log right before we attempt to connect so we know the script is executing
+console.log("🔄 Attempting to connect to broker: " + MQTT_BROKER);
 
 document.addEventListener('DOMContentLoaded', () => {
   buildPredCharts();
