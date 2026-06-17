@@ -393,7 +393,8 @@ const MQTT_USER = "airwatch_user";
 const MQTT_PASS = "AirWatchIoT2026!";
 
 const clientId = "web-client-" + Math.random().toString(16).substr(2, 8);
-const client = new Paho.MQTT.Client(MQTT_BROKER, MQTT_PORT, "/", clientId);
+// Updated constructor style for Paho 1.1.0
+const client = new Paho.Client(MQTT_BROKER, Number(MQTT_PORT), clientId);
 
 client.onConnectionLost = function(responseObject) {
   if (responseObject.errorCode !== 0) {
