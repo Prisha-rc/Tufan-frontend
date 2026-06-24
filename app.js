@@ -201,9 +201,9 @@ function severityColor(severity) {
 }
 
 function lightPollutionClass(lux) {
-  if (lux < 10)  return { label: 'Severe',   color: '#ff4444' };
-  if (lux < 30)  return { label: 'High',     color: '#ff7e00' };
-  if (lux < 60)  return { label: 'Moderate', color: '#ffff00' };
-  if (lux < 100) return { label: 'Low',      color: '#92d050' };
-  return               { label: 'Minimal',   color: '#00e400' };
+  if (lux <= 10)  return { label: 'Dark Sky', color: '#00e400' }; // Cleanest/Best
+  if (lux <= 30)  return { label: 'Low',      color: '#92d050' };
+  if (lux <= 60)  return { label: 'Moderate', color: '#ffca28' };
+  if (lux <= 100) return { label: 'High',     color: '#ff7e00' };
+  return                 { label: 'Severe',   color: '#ff0000' }; // Brightest/Worst
 }
