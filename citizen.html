@@ -362,8 +362,41 @@ function buildSparkline(id, data, color) {
   el.innerHTML = data.map(v => `<div class="sparkline-bar" style="height:${(v/max*100)}%;background:${color}"></div>`).join('');
 }
 
+// ==========================================
+// NEW: URBAN CALIBRATED LIGHT POLLUTION ENGINE
+// ==========================================
+function getLightPollutionInfo(lux) {
+  if (lux <= 10) {
+    return { 
+      label: "Dark Sky", color: "#00e400", 
+      tip: "Natural levels of darkness. Excellent for biodiversity." 
+    };
+  } else if (lux <= 30) {
+    return { 
+      label: "Low", color: "#92d050", 
+      tip: "Ideal night conditions for urban residential areas." 
+    };
+  } else if (lux <= 60) {
+    return { 
+      label: "Moderate", color: "#ffca28", 
+      tip: "Standard urban skyglow. Consider shielded street lighting." 
+    };
+  } else if (lux <= 100) {
+    return { 
+      label: "High", color: "#ff7e00", 
+      tip: "Significant artificial light. Disrupts local nocturnal wildlife." 
+    };
+  } else {
+    return { 
+      label: "Severe", color: "#ff0000", 
+      tip: "Extreme light pollution. High energy waste and heavy urban skyglow." 
+    };
+  }
+}
+
 function renderLightPollution(lux) {
   const lpInfo = getLightPollutionInfo(lux);
+  
   document.getElementById('lp-value').textContent = lux;
   document.getElementById('lp-value').style.color = lpInfo.color;
 
@@ -418,6 +451,11 @@ client.onMessageArrived = function(message) {
     localStorage.setItem('last_known_airwatch_data', message.payloadString);
     
     updateDashboardUI(payload);
+
+    // If your Python payload sends dynamic light pollution measurements later:
+    if (payload.light_pollution !== undefined) {
+      renderLightPollution(payload.light_pollution);
+    }
   } catch (e) {
     console.error("Failed to parse MQTT message", e);
   }
@@ -429,8 +467,10 @@ const options = {
   cleanSession: true,
   onSuccess: function() {
     console.log("Connected to Public EMQX WebSockets!");
-    document.getElementById('wind-val').textContent = 'Sensor Online';
-    document.getElementById('wind-val').style.color = '#00c48c';
+    if (document.getElementById('wind-val').textContent !== 'Displaying Cached Data') {
+      document.getElementById('wind-val').textContent = 'Sensor Online';
+      document.getElementById('wind-val').style.color = '#00c48c';
+    }
     client.subscribe("tufan/airwatch/live"); 
   },
   onFailure: function(message) {
@@ -449,11 +489,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const backupPayload = JSON.parse(cachedData);
     updateDashboardUI(backupPayload);
     
-    // Alert user that values are standing snapshots
+    // Extract cached light pollution data if available, else load the Kolkata urban baseline (85 lx)
+    renderLightPollution(backupPayload.light_pollution || 85);
+    
     document.getElementById('wind-val').textContent = 'Displaying Cached Data';
     document.getElementById('wind-val').style.color = '#ffca28';
   } else {
-    renderLightPollution(CURRENT.lightPollution || 85);
+    // Standard baseline fallback string for fresh users without throwing runtime reference errors
+    renderLightPollution(85);
   }
   
   console.log("Attempting single structured handshake...");
