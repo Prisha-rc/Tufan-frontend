@@ -110,31 +110,27 @@
 
 <script>
 // ==========================================
-// 1. SUPABASE SECURE GATEWAY ENCAPSULATION
+// 1. ISOLATED SUPABASE CONNECTION FOR ADMIN
 // ==========================================
-// Overwriting global pointers without const/let keywords to prevent browser syntax crashes
-SUPABASE_URL = "https://twohlkigplkhnqcfftx.supabase.co"; 
-// PASTE YOUR ACTUAL PUBLIC ANON KEY BETWEEN THESE QUOTES BELOW:
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3b2xobGtpZ3Bsa2hucWNmZnR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDc3MzEsImV4cCI6MjA5NTM4MzczMX0.zU8sZiUydaCWYDiuPu7dw-vOnFzggSbRA8cI1DOzBCk"; 
-supabaseClient = null;
-let dbUsers = [];
+// Using uniquely named constants to prevent ANY conflict with app.js
+const ADMIN_SUPABASE_URL = "https://twohlkigplkhnqcfftx.supabase.co"; 
+const ADMIN_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3b2xobGtpZ3Bsa2hucWNmZnR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDc3MzEsImV4cCI6MjA5NTM4MzczMX0.zU8sZiUydaCWYDiuPu7dw-vOnFzggSbRA8cI1DOzBCk"; 
 
-// Safely wrap client instantiation to handle existing global pointers cleanly
+let adminDbUsers = [];
+let adminSupabaseClient = null;
+
+// Initialize the isolated client
 try {
-  if (typeof supabase !== 'undefined' && SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== "YOUR_REAL_ANON_KEY_HERE") {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log("Supabase client initialized successfully.");
-  } else {
-    console.warn("Supabase library missing or placeholder key detected. Loading fallback profile state.");
+  if (typeof supabase !== 'undefined' && ADMIN_SUPABASE_ANON_KEY && ADMIN_SUPABASE_ANON_KEY !== "YOUR_REAL_ANON_KEY_HERE") {
+    adminSupabaseClient = supabase.createClient(ADMIN_SUPABASE_URL, ADMIN_SUPABASE_ANON_KEY);
   }
 } catch (initError) {
-  console.error("Critical initialization block bypass triggered:", initError);
+  console.error("Admin client initialization failed:", initError);
 }
 
 async function fetchRealSupabaseUsers() {
-  // FALLBACK SNAPSHOT: If database is unreachable or client isn't configured, keep UI fully interactive
-  if (!supabaseClient) {
-    console.warn("Supabase client unreachable. Displaying fallback snapshot metrics matching your database length.");
+  if (!adminSupabaseClient) {
+    console.warn("Using fallback metrics. Ensure Anon Key is set.");
     document.getElementById('kpi-total').textContent = "8";
     document.getElementById('kpi-active').textContent = "8";
     
@@ -148,25 +144,21 @@ async function fetchRealSupabaseUsers() {
   }
 
   try {
-    // Queries your actual 'profiles' table seen in your schema image
-    const { data, error } = await supabaseClient
+    const { data, error } = await adminSupabaseClient
       .from('profiles')
       .select('id, email, role');
 
     if (error) throw error;
 
-    dbUsers = data || [];
+    adminDbUsers = data || [];
     
-    // UI Repaint based on actual database array lengths
-    document.getElementById('kpi-total').textContent = dbUsers.length;
-    
-    // Since there is no status column, we consider all registered profile entries active
-    document.getElementById('kpi-active').textContent = dbUsers.length;
+    document.getElementById('kpi-total').textContent = adminDbUsers.length;
+    document.getElementById('kpi-active').textContent = adminDbUsers.length;
 
-    updateRoleChart(dbUsers);
+    updateRoleChart(adminDbUsers);
 
   } catch (err) {
-    console.error("Supabase data connection tracking failure:", err);
+    console.error("Data fetch error:", err);
     document.getElementById('kpi-total').textContent = "Err";
     document.getElementById('kpi-active').textContent = "Err";
   }
@@ -263,7 +255,7 @@ function renderAlertLog() {
 document.addEventListener('DOMContentLoaded', () => {
   renderSystemStatus();
   renderAlertLog();
-  fetchRealSupabaseUsers(); // Placed last so network lag cannot block interface painting
+  fetchRealSupabaseUsers();
 });
 </script>
 </body>
