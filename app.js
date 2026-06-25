@@ -6,7 +6,7 @@
 const SUPABASE_URL = 'https://twolhlkigplkhnqcfftx.supabase.co'; // Your URL
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3b2xobGtpZ3Bsa2hucWNmZnR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDc3MzEsImV4cCI6MjA5NTM4MzczMX0.zU8sZiUydaCWYDiuPu7dw-vOnFzggSbRA8cI1DOzBCk'; // Paste your key here
 
-const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 const ROLE_CONFIG = {
   admin:   { redirect: 'admin.html' },
