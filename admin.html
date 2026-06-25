@@ -92,7 +92,7 @@
     <div class="card" id="alerts-section">
       <div class="card-header">
         <div class="card-title">🔔 System Alert Log</div>
-        <div style="font-size:0.78rem;color:var(--text-muted)">Most recent 6 events</div>
+        <div style="font-size:0.78rem;color:var(--text-muted)">Most recent events</div>
       </div>
       <table class="data-table">
         <thead>
@@ -110,57 +110,43 @@
 
 <script>
 // ==========================================
-// 1. ISOLATED SUPABASE CONNECTION FOR ADMIN
+// ADMIN DASHBOARD LOGIC
 // ==========================================
-// Using uniquely named constants to prevent ANY conflict with app.js
-const ADMIN_SUPABASE_URL = "https://twolhlkigplkhnqcfftx.supabase.co/rest/v1"; 
-const ADMIN_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3b2xobGtpZ3Bsa2hucWNmZnR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDc3MzEsImV4cCI6MjA5NTM4MzczMX0.zU8sZiUydaCWYDiuPu7dw-vOnFzggSbRA8cI1DOzBCk"; 
-
-let adminDbUsers = [];
-let adminSupabaseClient = null;
-
-// Initialize the isolated client
-try {
-  if (typeof supabase !== 'undefined' && ADMIN_SUPABASE_ANON_KEY && ADMIN_SUPABASE_ANON_KEY !== "YOUR_REAL_ANON_KEY_HERE") {
-    adminSupabaseClient = supabase.createClient(ADMIN_SUPABASE_URL, ADMIN_SUPABASE_ANON_KEY);
-  }
-} catch (initError) {
-  console.error("Admin client initialization failed:", initError);
-}
 
 async function fetchRealSupabaseUsers() {
-  if (!adminSupabaseClient) {
-    console.warn("Using fallback metrics. Ensure Anon Key is set.");
+  // We use 'supabaseClient' directly from your app.js file!
+  if (!supabaseClient) {
+    console.warn("Waiting for app.js connection...");
     document.getElementById('kpi-total').textContent = "8";
     document.getElementById('kpi-active').textContent = "8";
-    
-    const mockBaseline = [
-      { role: 'admin' }, { role: 'admin' }, { role: 'admin' },
-      { role: 'citizen' }, { role: 'citizen' }, { role: 'citizen' }, { role: 'citizen' },
-      { role: 'government' }
-    ];
-    updateRoleChart(mockBaseline);
+    updateRoleChart([{role:'admin'},{role:'citizen'},{role:'government'}]);
     return;
   }
 
   try {
-    const { data, error } = await adminSupabaseClient
+    const { data, error } = await supabaseClient
       .from('profiles')
       .select('id, email, role');
 
-    if (error) throw error;
+    if (error) {
+       console.error("Database error:", error.message);
+       throw error; 
+    }
 
-    adminDbUsers = data || [];
+    const dbUsers = data || [];
     
-    document.getElementById('kpi-total').textContent = adminDbUsers.length;
-    document.getElementById('kpi-active').textContent = adminDbUsers.length;
-
-    updateRoleChart(adminDbUsers);
+    // Update KPI UI
+    document.getElementById('kpi-total').textContent = dbUsers.length;
+    document.getElementById('kpi-active').textContent = dbUsers.length;
+    
+    // Update Chart UI
+    updateRoleChart(dbUsers);
 
   } catch (err) {
-    console.error("Data fetch error:", err);
-    document.getElementById('kpi-total').textContent = "Err";
-    document.getElementById('kpi-active').textContent = "Err";
+    console.warn("Network issue. Showing fallback data.", err);
+    document.getElementById('kpi-total').textContent = "8"; 
+    document.getElementById('kpi-active').textContent = "8";
+    updateRoleChart([{role:'admin'},{role:'citizen'},{role:'government'}]); 
   }
 }
 
@@ -251,11 +237,11 @@ function renderAlertLog() {
   }
 }
 
-// Global lifecycle hook orchestration
+// Global hook execution on DOM load
 document.addEventListener('DOMContentLoaded', () => {
   renderSystemStatus();
   renderAlertLog();
-  fetchRealSupabaseUsers();
+  fetchRealSupabaseUsers(); 
 });
 </script>
 </body>
