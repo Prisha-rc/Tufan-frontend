@@ -6,6 +6,7 @@
   <title>AirWatch — Admin Dashboard</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -30,7 +31,6 @@
     <a href="admin.html" class="nav-link active"><span class="nav-icon">🛡️</span> Admin Panel</a>
     <a href="maps.html"  class="nav-link"><span class="nav-icon">🗺️</span> Maps</a>
     <div class="sidebar-section-label">Management</div>
-    <a href="#users-section"  class="nav-link"><span class="nav-icon">👥</span> User Management</a>
     <a href="#alerts-section" class="nav-link"><span class="nav-icon">🔔</span> System Alerts</a>
     <a href="#status-section" class="nav-link"><span class="nav-icon">🖥️</span> System Status</a>
   </nav>
@@ -40,11 +40,10 @@
     <div class="page-header">
       <div>
         <div class="page-title">Admin Dashboard</div>
-        <div class="page-subtitle">User management, system alerts, and data source monitoring</div>
+        <div class="page-subtitle">User role distribution, system alerts, and data source monitoring</div>
       </div>
     </div>
 
-    <!-- KPI Row -->
     <div class="grid-4">
       <div class="metric-card" style="--metric-color:#8f3f97">
         <div class="metric-label">Total Users</div>
@@ -54,7 +53,7 @@
       <div class="metric-card" style="--metric-color:#00c48c">
         <div class="metric-label">Active Users</div>
         <div class="metric-value text-success" id="kpi-active">--</div>
-        <div class="metric-unit">Currently registered</div>
+        <div class="metric-unit">Currently verified</div>
       </div>
       <div class="metric-card" style="--metric-color:#ff4444">
         <div class="metric-label">System Alerts</div>
@@ -63,12 +62,11 @@
       </div>
       <div class="metric-card" style="--metric-color:#4e9af1">
         <div class="metric-label">Sensors Online</div>
-        <div class="metric-value text-accent">23<span style="font-size:1rem;color:var(--text-muted)">/24</span></div>
-        <div class="metric-unit">1 reconnecting</div>
+        <div class="metric-value text-accent">1<span style="font-size:1rem;color:var(--text-muted)">/1</span></div>
+        <div class="metric-unit">Active and reporting</div>
       </div>
     </div>
 
-    <!-- Role distribution + System status -->
     <div class="grid-2">
       <div class="card">
         <div class="card-header">
@@ -91,48 +89,6 @@
       </div>
     </div>
 
-    <!-- User Management Table -->
-    <div class="card" id="users-section">
-      <div class="card-header">
-        <div>
-          <div class="card-title">👥 User Management</div>
-          <div style="font-size:0.78rem;color:var(--text-muted)">All registered AirWatch accounts</div>
-        </div>
-        <button onclick="showAddUser()" style="background:var(--accent-dim);border:1px solid rgba(78,154,241,0.3);color:var(--accent);border-radius:var(--radius-sm);padding:7px 14px;font-family:var(--font);font-size:0.82rem;cursor:pointer;font-weight:600">
-          + Add User
-        </button>
-      </div>
-
-      <!-- Add User Form (hidden by default) -->
-      <div id="add-user-form" style="display:none;background:var(--bg-700);border:1px solid var(--glass-border);border-radius:var(--radius-md);padding:18px;margin-bottom:16px">
-        <div style="font-size:0.85rem;font-weight:600;margin-bottom:12px;color:var(--text-primary)">New User Details</div>
-        <div class="grid-3" style="gap:12px">
-          <div class="form-group" style="margin:0"><label>Name</label><input id="new-name" class="form-input" placeholder="Full Name" /></div>
-          <div class="form-group" style="margin:0"><label>Email</label><input id="new-email" class="form-input" type="email" placeholder="email@example.com" /></div>
-          <div class="form-group" style="margin:0">
-            <label>Role</label>
-            <select id="new-role" class="form-input">
-              <option value="Citizen">Citizen</option>
-              <option value="Government">Government</option>
-              <option value="Admin">Admin</option>
-            </select>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button onclick="addUser()" style="background:var(--accent);border:none;color:#fff;border-radius:var(--radius-sm);padding:8px 16px;font-family:var(--font);cursor:pointer;font-weight:600;font-size:0.85rem">Add User</button>
-          <button onclick="document.getElementById('add-user-form').style.display='none'" style="background:var(--glass);border:1px solid var(--glass-border);color:var(--text-secondary);border-radius:var(--radius-sm);padding:8px 16px;font-family:var(--font);cursor:pointer;font-size:0.85rem">Cancel</button>
-        </div>
-      </div>
-
-      <table class="data-table">
-        <thead>
-          <tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
-        </thead>
-        <tbody id="users-table"></tbody>
-      </table>
-    </div>
-
-    <!-- System Alerts Log -->
     <div class="card" id="alerts-section">
       <div class="card-header">
         <div class="card-title">🔔 System Alert Log</div>
@@ -152,72 +108,51 @@
 <script src="data.js"></script>
 <script src="app.js"></script>
 <script>
-let users = [...ADMIN_USERS];
+// ==========================================
+// 1. SUPABASE LIVE DATABASE CONNECTION INITIALIZATION
+// ==========================================
+// Replace these strings with your actual project credentials from your Supabase settings tab!
+const SUPABASE_URL = "https://twohlkigplkhnqcfftx.supabase.co"; 
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3b2xobGtpZ3Bsa2hucWNmZnR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MDc3MzEsImV4cCI6MjA5NTM4MzczMX0.zU8sZiUydaCWYDiuPu7dw-vOnFzggSbRA8cI1DOzBCk"; 
 
-function renderUsers() {
-  const tbody = document.getElementById('users-table');
-  tbody.innerHTML = users.map(u => {
-    const roleClass = u.role==='Admin' ? 'role-admin' : u.role==='Government' ? 'role-govt' : 'role-citizen';
-    const statusClass = u.status==='Active' ? 'status-active' : 'status-inactive';
-    return `<tr>
-      <td class="text-mono text-muted">${u.id}</td>
-      <td style="font-weight:600">${u.name}</td>
-      <td style="color:var(--text-muted);font-size:0.83rem">${u.email}</td>
-      <td><span class="role-badge ${roleClass}">${u.role}</span></td>
-      <td><span class="${statusClass}">● ${u.status}</span></td>
-      <td class="text-mono font-xs text-muted">${u.lastLogin}</td>
-      <td>
-        <button onclick="toggleStatus(${u.id})" style="background:none;border:1px solid var(--glass-border);color:var(--text-muted);border-radius:4px;padding:3px 8px;font-size:0.72rem;cursor:pointer;font-family:var(--font)">
-          ${u.status==='Active' ? 'Deactivate' : 'Activate'}
-        </button>
-        <button onclick="removeUser(${u.id})" style="background:none;border:1px solid rgba(255,68,68,0.3);color:var(--danger);border-radius:4px;padding:3px 8px;font-size:0.72rem;cursor:pointer;font-family:var(--font);margin-left:4px">
-          Remove
-        </button>
-      </td>
-    </tr>`;
-  }).join('');
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // Update KPIs
-  document.getElementById('kpi-total').textContent  = users.length;
-  document.getElementById('kpi-active').textContent = users.filter(u=>u.status==='Active').length;
-  updateRoleChart();
-}
+let dbUsers = [];
 
-function toggleStatus(id) {
-  const u = users.find(u=>u.id===id);
-  if (u) u.status = u.status==='Active' ? 'Inactive' : 'Active';
-  renderUsers();
-}
+async function fetchRealSupabaseUsers() {
+  try {
+    // Queries your actual 'profiles' table seen in your schema image
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('id, email, role');
 
-function removeUser(id) {
-  if (confirm('Remove this user?')) {
-    users = users.filter(u=>u.id!==id);
-    renderUsers();
+    if (error) throw error;
+
+    dbUsers = data || [];
+    
+    // UI Repaint based on actual database array lengths
+    document.getElementById('kpi-total').textContent = dbUsers.length;
+    
+    // Since there is no status column, we consider all registered profile entries active
+    document.getElementById('kpi-active').textContent = dbUsers.length;
+
+    updateRoleChart(dbUsers);
+
+  } catch (err) {
+    console.error("Supabase data connection tracking failure:", err);
+    // Fallback indicator text if credentials are empty strings during building layout
+    document.getElementById('kpi-total').textContent = "Err";
+    document.getElementById('kpi-active').textContent = "Err";
   }
 }
 
-function showAddUser() {
-  document.getElementById('add-user-form').style.display = '';
-}
-
-function addUser() {
-  const name  = document.getElementById('new-name').value.trim();
-  const email = document.getElementById('new-email').value.trim();
-  const role  = document.getElementById('new-role').value;
-  if (!name || !email) { alert('Please fill in all fields.'); return; }
-  users.push({ id: Date.now(), name, email, role, status:'Active', lastLogin:'2026-03-28' });
-  document.getElementById('add-user-form').style.display = 'none';
-  document.getElementById('new-name').value  = '';
-  document.getElementById('new-email').value = '';
-  renderUsers();
-}
-
-// ── Role Chart ──
+// ── Role Chart Execution ──
 let roleChartInst = null;
-function updateRoleChart() {
-  const adminCount  = users.filter(u=>u.role==='Admin').length;
-  const govtCount   = users.filter(u=>u.role==='Government').length;
-  const citizenCount= users.filter(u=>u.role==='Citizen').length;
+function updateRoleChart(userList) {
+  // Counts matching the exact lower-case properties string from your schema screen
+  const adminCount  = userList.filter(u => u.role === 'admin' || u.role === 'Admin').length;
+  const govtCount   = userList.filter(u => u.role === 'government' || u.role === 'Government').length;
+  const citizenCount= userList.filter(u => u.role === 'citizen' || u.role === 'Citizen').length;
 
   if (roleChartInst) {
     roleChartInst.data.datasets[0].data = [adminCount, govtCount, citizenCount];
@@ -257,12 +192,9 @@ function updateRoleChart() {
   </div>`).join('');
 }
 
-// ── System Status ──
+// ── System Status List ──
 const SYSTEM_STATUSES = [
-  { name:'AQI Sensor Network', status:'Online', detail:'23/24 active sensors', ok:true },
-  { name:'Road Monitoring API', status:'Online', detail:'Polling every 15 min', ok:true },
-  { name:'Weather Data Feed',   status:'Online', detail:'IMD + OpenWeather', ok:true },
-  { name:'Construction CCTV',   status:'Degraded', detail:'2 cameras offline', ok:false },
+  { name:'AQI Sensor Network', status:'Online', detail:'1/1 active sensors', ok:true },
   { name:'Alert Engine',        status:'Online', detail:'Real-time processing', ok:true },
   { name:'Database',            status:'Online', detail:'Last sync: 0m ago', ok:true },
 ];
@@ -282,6 +214,7 @@ function renderSystemStatus() {
 // ── Alert Log ──
 function renderAlertLog() {
   document.getElementById('kpi-sys-alerts').textContent = SYSTEM_ALERTS.length;
+  
   document.getElementById('alerts-table').innerHTML = SYSTEM_ALERTS.map(a=>{
     const col = a.severity==='Critical' ? 'var(--aqi-hazardous)' : a.severity==='High' ? 'var(--danger)' : a.severity==='Medium' ? 'var(--warning)' : 'var(--success)';
     return `<tr>
@@ -293,8 +226,9 @@ function renderAlertLog() {
   }).join('');
 }
 
+// Global hook execution on dom initialization lifecycle
 document.addEventListener('DOMContentLoaded', () => {
-  renderUsers();
+  fetchRealSupabaseUsers();
   renderSystemStatus();
   renderAlertLog();
 });
