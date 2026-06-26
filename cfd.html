@@ -219,13 +219,10 @@
 // ============================================================
 const FLASK_URL = "https://airwatch-cfd.onrender.com";
 
-// Update the number next to the slider immediately when dragged
-/* Simple formatting utility for updating slider text indicators */
 function updateUI(slider, textId) {
     document.getElementById(textId).textContent = slider.value;
 }
 
-// Send the new values to Render cloud backend silently in the background
 function sendParams() {
     fetch(`${FLASK_URL}/set_params`, {
         method: 'POST',
@@ -236,7 +233,7 @@ function sendParams() {
             traffic: document.getElementById('r-traffic').value,
             bg_aqi: document.getElementById('r-bg-aqi').value
         })
-    }).catch(err => console.log("Synchronizing parameters with Render..."));
+    }).catch(err => console.log("Synchronizing parameters..."));
 }
 
 function getAQIInfo(aqi) {
@@ -248,26 +245,27 @@ function getAQIInfo(aqi) {
   return { label: 'GOOD', color: 'var(--aqi-good)' };
 }
 
-// Fetch live calculated AQI metrics from cloud instance every half second
+// Optimized: 1500ms baseline prevents resource conflicts with the active JPEG stream
 setInterval(() => {
     fetch(`${FLASK_URL}/get_aqi`)
     .then(response => response.json())
     .then(data => {
         let aqi = Math.round(data.aqi);
-        let info = getAQIInfo(aqi);
-        
-        document.getElementById('cfd-aqi-num').textContent = aqi;
-        document.getElementById('cfd-aqi-num').style.color = info.color;
-        document.getElementById('cfd-aqi-lbl').textContent = info.label;
-        document.getElementById('cfd-aqi-lbl').style.color = info.color;
+        // Fallback filter ensures lagging frames do not default to 0 layout values
+        if (aqi > 0) {
+            let info = getAQIInfo(aqi);
+            document.getElementById('cfd-aqi-num').textContent = aqi;
+            document.getElementById('cfd-aqi-num').style.color = info.color;
+            document.getElementById('cfd-aqi-lbl').textContent = info.label;
+            document.getElementById('cfd-aqi-lbl').style.color = info.color;
+        }
     })
     .catch(err => {
-        document.getElementById('cfd-aqi-lbl').textContent = "WAKING UP SERVER...";
+        document.getElementById('cfd-aqi-lbl').textContent = "SYNCHRONIZING...";
         document.getElementById('cfd-aqi-lbl').style.color = "var(--text-muted)";
     });
-}, 500);
+}, 1500);
 
-// Initialize slider parameters on page load
 sendParams();
 </script>
 </body>
