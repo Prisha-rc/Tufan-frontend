@@ -245,28 +245,49 @@ function getAQIInfo(aqi) {
   return { label: 'GOOD', color: 'var(--aqi-good)' };
 }
 
-// Optimized: 1500ms baseline prevents resource conflicts with the active JPEG stream
-setInterval(() => {
-    fetch(`${FLASK_URL}/get_aqi`)
-    .then(response => response.json())
-    .then(data => {
-        let aqi = Math.round(data.aqi);
-        // Fallback filter ensures lagging frames do not default to 0 layout values
-        if (aqi > 0) {
-            let info = getAQIInfo(aqi);
-            document.getElementById('cfd-aqi-num').textContent = aqi;
-            document.getElementById('cfd-aqi-num').style.color = info.color;
-            document.getElementById('cfd-aqi-lbl').textContent = info.label;
-            document.getElementById('cfd-aqi-lbl').style.color = info.color;
+// Stream Reader: Natively processes the multipart boundaries to extract X-Live-AQI
+async function connectToUnifiedStream() {
+    try {
+        const response = await fetch(`${FLASK_URL}/video_feed`);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        
+        let buffer = "";
+        
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            
+            // Check if our custom inline header parameter has arrived in the stream buffer
+            if (buffer.includes("X-Live-AQI:")) {
+                const parts = buffer.split("X-Live-AQI:");
+                if (parts.length > 1) {
+                    const aqiValue = parseInt(parts[1].split("\r\n")[0].trim());
+                    if (!isNaN(aqiValue) && aqiValue > 0) {
+                        let info = getAQIInfo(aqiValue);
+                        document.getElementById('cfd-aqi-num').textContent = aqiValue;
+                        document.getElementById('cfd-aqi-lbl').textContent = info.label;
+                        document.getElementById('cfd-aqi-num').style.color = info.color;
+                        document.getElementById('cfd-aqi-lbl').style.color = info.color;
+                    }
+                }
+                // Maintain clean buffer overhead string references
+                buffer = parts[parts.length - 1]; 
+            }
         }
-    })
-    .catch(err => {
-        document.getElementById('cfd-aqi-lbl').textContent = "SYNCHRONIZING...";
+    } catch (e) {
+        document.getElementById('cfd-aqi-lbl').textContent = "RECONNECTING ENGINE...";
         document.getElementById('cfd-aqi-lbl').style.color = "var(--text-muted)";
-    });
-}, 1500);
+        // Automatic retry fallback if Render puts the server container back to sleep
+        setTimeout(connectToUnifiedStream, 3000); 
+    }
+}
 
+// Initialize layout context on launch
 sendParams();
+connectToUnifiedStream();
 </script>
 </body>
 </html>
